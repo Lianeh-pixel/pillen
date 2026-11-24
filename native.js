@@ -65,7 +65,7 @@ async function nativeSchedule() {
         const many = open.length > 1, extra = { kind: "slot", keys: sl.key };
         const body = many ? open.map(m => m.name).join(", ") : medLine(open), lines = many ? open.map(m => medLine([m])).join("\n") : null;
         const sz = S.snooze[sl.key];
-        if (t > now) add(ids[0], t, "Zeit für deine Mittel", body, extra, true, lines);
+        if (t > now) add(ids[0], t, "Zeit für deine Medikamente", body, extra, true, lines);
         if (sz && sz > now) add(ids[2], sz, "Erinnerung: " + sl.time + " Uhr", body, extra, true, lines);
         else if (!sz && t + NAG > now && now - t < LATE) add(ids[1], t + NAG, "Noch nicht eingenommen", body, extra, true, lines);
       }
