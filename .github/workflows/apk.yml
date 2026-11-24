@@ -24,13 +24,16 @@ jobs:
       - name: Schlüssel entschlüsseln
         env: { PILLEN_KEY_PASS: "${{ secrets.KEY_PASS }}" }
         run: |
-          if [ -z "$PILLEN_KEY_PASS" ]; then echo "::error::Das Geheimnis KEY_PASS fehlt (GitHub → Settings → Secrets and variables → Actions)"; exit 1; fi
+          if [ -z "$PILLEN_KEY_PASS" ]; then echo "::warning::Das Geheimnis KEY_PASS fehlt – nur Probebau, keine Veröffentlichung"; echo "SIGNED=no" >> $GITHUB_ENV; exit 0; fi
+          echo "SIGNED=yes" >> $GITHUB_ENV
           openssl enc -d -aes-256-cbc -pbkdf2 -in native/pillen.jks.enc -out android/app/pillen.jks -pass env:PILLEN_KEY_PASS
       - name: Bauen
         env: { PILLEN_KEY_PASS: "${{ secrets.KEY_PASS }}" }
-        run: cd android && ./gradlew assembleRelease --no-daemon
-      - run: cp android/app/build/outputs/apk/release/app-release.apk pillen.apk
-      - uses: softprops/action-gh-release@v2
+        run: cd android && if [ "$SIGNED" = yes ]; then ./gradlew assembleRelease --no-daemon; else ./gradlew assembleDebug --no-daemon; fi
+      - if: env.SIGNED == 'yes'
+        run: cp android/app/build/outputs/apk/release/app-release.apk pillen.apk
+      - if: env.SIGNED == 'yes'
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: apk
           name: Pillen (Android-App)
