@@ -85,7 +85,7 @@ label.l { display: block; font-size: 12px; color: var(--muted); margin: 16px 4px
 .chip.add { background: none; border: 1.5px dashed var(--line); color: var(--muted); font-weight: 500; padding: 9px 15px; position: relative; }
 .chip.add input { position: absolute; inset: 0; opacity: 0; width: 100%; }
 .seg { display: flex; background: var(--card); box-shadow: var(--shadow); border-radius: 999px; padding: 4px; }
-.seg button { flex: 1; text-align: center; padding: 8px 0; border-radius: 999px; font-size: 13px; color: var(--muted); }
+.seg button { flex: 1; text-align: center; padding: 8px 6px; white-space: nowrap; border-radius: 999px; font-size: 13px; color: var(--muted); }
 .seg button.on { background: var(--acc); color: var(--onacc); font-weight: 600; }
 .hint { font-size: 12px; color: var(--muted); margin: 8px 4px 0; line-height: 1.45; }
 .inl { display: flex; align-items: center; gap: 10px; }

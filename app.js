@@ -408,7 +408,7 @@ function drawEdit() {
     <label class="l">Vorrat</label>
     <div class="inl"><input class="field" inputmode="decimal" data-f="stock" value="${m.stock != null ? fmtNum(m.stock) : ""}" placeholder="optional"><span>${esc(m.unit || "Stück")} übrig</span></div>
     <label class="l">Erinnern, wenn der Vorrat zur Neige geht</label>
-    <div class="seg">${[["off", "Aus"], ["rest", "Restbestand"], ["date", "Datum"], ["span", "Zeitspanne"]].map(([k, t]) => `<button data-act="smode" data-m="${k}" class="${(m.stockMode || "off") === k ? "on" : ""}">${t}</button>`).join("")}</div>
+    <div class="seg">${[["off", "Aus"], ["rest", "Restbestand"], ["span", "Zeitspanne"]].map(([k, t]) => `<button data-act="smode" data-m="${k}" class="${(m.stockMode || "off") === k ? "on" : ""}">${t}</button>`).join("")}</div>
     ${modeField}
     <button class="btn" data-act="save" style="margin-top:22px">Speichern</button>
     <button class="btn danger" data-act="close" style="margin-top:4px">Abbrechen</button>`);
@@ -477,7 +477,7 @@ document.addEventListener("click", async e => {
   else if (a === "untick") { const sl = slotByKey(b.dataset.slot), m = S.meds.find(x => x.id === b.dataset.id); if (sl && m) { const e = entry(sl.key, m); if (e && e.auto && e.s === "taken") mark(sl, [m], "skipped"); else unmark(sl, m); render(); } }
   else if (a === "refill") {
     const m = S.meds.find(x => x.id === b.dataset.id); if (!m) return;
-    if (m.stock == null && m.stockMode !== "rest") { m.stockOk = true; m.stockSince = dkey(new Date()); if (m.stockMode === "date") m.stockDate = null; save(); render(); toast("Erledigt. Datum und Zeitspanne kannst du beim Mittel neu setzen."); return; }
+    if (m.stock == null && m.stockMode !== "rest") { m.stockOk = true; m.stockSince = dkey(new Date()); if (m.stockMode === "date") m.stockDate = null; save(); render(); toast("Erledigt. Die Zeitspanne zählt ab heute neu."); return; }
     const v = prompt("Wie viele " + unitFor(m, 2) + " sind in der neuen Packung?", m.lastPack || "");
     const n = num(v); if (n && n > 0) { m.lastPack = n; refill(m, n); }
   }
