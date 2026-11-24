@@ -387,7 +387,7 @@ function viewHistory() {
   list.forEach(({ d, st }) => {
     const dd = dkey(d) === dkey(addDays(today, 1)) ? "Morgen" : dkey(d) === dkey(today) ? "Heute" : dkey(d) === dkey(addDays(today, -1)) ? "Gestern · " + d.toLocaleDateString("de-DE", { weekday: "long" }) : d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
     h += `<div class="lbl">${dd}</div><div class="card">` + st.items.map(({ sl, m, s, e }) =>
-      `<div class="item"><span class="tm">${sl.time}</span><div class="nm grow">${esc(m.name)}</div>${s === "planned" ? `<span class="st-skip">${isAuto(m, sl.time) ? "automatisch" : "geplant"}</span>` : s === "taken" ? `<span class="st-ok">${hm(new Date(e.at))}</span>` : s === "skipped" ? `<span class="st-skip">ausgelassen</span>` : `<span class="st-miss">vergessen</span>`}</div>`).join("") + `</div>`;
+      `<${s === "planned" ? "div" : `button data-act="hitem" data-slot="${sl.key}" data-id="${m.id}"`} class="item"><span class="tm">${sl.time}</span><div class="nm grow">${esc(m.name)}</div>${s === "planned" ? `<span class="st-skip">${isAuto(m, sl.time) ? "automatisch" : "geplant"}</span>` : s === "taken" ? `<span class="st-ok">${hm(new Date(e.at))}</span>` : s === "skipped" ? `<span class="st-skip">ausgelassen</span>` : `<span class="st-miss">vergessen</span>`}</${s === "planned" ? "div" : "button"}>`).join("") + `</div>`;
   });
   return h;
 }
@@ -448,6 +448,34 @@ function saveEdit() {
   if (!S.push && !NATIVE) toast("Gespeichert. Tipp: Mitteilungen über ⚙ einschalten.", 4500);
 }
 
+/* ---------- Einnahme im Verlauf ändern ---------- */
+let hEdit = null;
+function openEntry(key, id) {
+  const sl = slotByKey(key), m = S.meds.find(x => x.id === id); if (!sl || !m) return;
+  const e = entry(key, m);
+  hEdit = { key, id, s: e ? e.s : "missed", time: e && e.s === "taken" ? hm(new Date(e.at)) : sl.time };
+  drawEntry();
+}
+function drawEntry() {
+  const sl = slotByKey(hEdit.key), m = S.meds.find(x => x.id === hEdit.id);
+  openSheet(`<h2>${esc(m.name)}</h2><div class="sub">${fmtDay(sl.at)} · ${sl.time} Uhr · ${esc(doseText(m))}</div>
+    <div class="seg" style="margin-top:18px">${[["taken", "Eingenommen"], ["skipped", "Ausgelassen"], ["missed", "Vergessen"]].map(([k, t]) => `<button data-act="hstate" data-m="${k}" class="${hEdit.s === k ? "on" : ""}">${t}</button>`).join("")}</div>
+    ${hEdit.s === "taken" ? `<label class="l">Eingenommen um</label><input class="field" type="time" data-act="htime" value="${hEdit.time}">` : ""}
+    <button class="btn" data-act="hsave" style="margin-top:22px">Speichern</button>
+    <button class="btn danger" data-act="close" style="margin-top:4px">Abbrechen</button>`);
+}
+function saveEntry() {
+  const sl = slotByKey(hEdit.key), m = S.meds.find(x => x.id === hEdit.id), k = hEdit.key + "|" + m.id, old = S.log[k];
+  if (old && old.s === "taken" && m.stock != null) m.stock += m.amount || 1;
+  if (hEdit.s === "taken") {
+    if (m.stock != null) m.stock = Math.max(0, m.stock - (m.amount || 1));
+    const [hh, mi] = hEdit.time.split(":").map(Number), at = new Date(sl.at); at.setHours(hh, mi, 0, 0);
+    S.log[k] = { s: "taken", at: at.getTime() };
+  } else if (hEdit.s === "skipped" || isAuto(m, sl.time)) S.log[k] = { s: "skipped", at: Date.now(), ...(isAuto(m, sl.time) ? { auto: true } : {}) };
+  else delete S.log[k];
+  updateLow(m); save(); pushSlot(sl); hEdit = null; closeSheet(); render();
+}
+
 async function openSettings() {
   const perm = NATIVE ? await nativePerm() : "Notification" in window ? Notification.permission : "denied";
   const on = NATIVE ? perm === "granted" : S.push && perm === "granted";
@@ -477,6 +505,9 @@ document.addEventListener("click", async e => {
   else if (a === "close") closeSheet();
   else if (a === "save") saveEdit();
   else if (a === "del") { if (confirm(edit.name + " wirklich löschen? Der Verlauf dieses Mittels wird ausgeblendet.")) { S.meds = S.meds.filter(x => x.id !== edit.id); save(); closeSheet(); render(); } }
+  else if (a === "hitem") openEntry(b.dataset.slot, b.dataset.id);
+  else if (a === "hstate") { const t = $("#sheet [data-act=htime]"); if (t) hEdit.time = t.value || hEdit.time; hEdit.s = b.dataset.m; drawEntry(); }
+  else if (a === "hsave") { const t = $("#sheet [data-act=htime]"); if (t && t.value) hEdit.time = t.value; saveEntry(); }
   else if (a === "tmode") { readEdit(); const t = edit.times[+b.dataset.i]; edit.auto = edit.auto || {}; if (b.dataset.m) { if (!edit.auto[t]) edit.auto[t] = Date.now(); } else delete edit.auto[t]; drawEdit(); }
   else if (a === "deltime") { readEdit(); edit.times.splice(+b.dataset.i, 1); drawEdit(); }
   else if (a === "smode") { readEdit(); edit.stockMode = b.dataset.m; drawEdit(); }
