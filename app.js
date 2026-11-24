@@ -434,7 +434,6 @@ function openSettings() {
     <div class="lbl">Daten</div>
     <div class="card"><div class="row-set"><div><div class="t">Sicherung speichern</div><div class="x">Alle Mittel und der Verlauf als Datei</div></div><button class="a" data-act="export">Speichern</button></div>
     <div class="row-set"><div><div class="t">Sicherung laden</div><div class="x">Ersetzt die Daten auf diesem Gerät</div></div><label class="a" style="color:var(--acc);font-weight:600;font-size:14px">Laden<input type="file" accept="application/json,.json" data-act="import" hidden></label></div></div>
-    <div class="hint">Deine Mittel und dein Verlauf liegen nur auf diesem Gerät. Für die Mitteilungen werden nur Name, Dosis und Uhrzeiten übertragen.</div>
     <button class="btn ghost" data-act="close" style="margin-top:22px">Fertig</button>`);
 }
 
