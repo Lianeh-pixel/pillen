@@ -59,7 +59,7 @@ async function nativeSchedule() {
     for (let i = -1; i <= DAYS_AHEAD; i++) {
       for (const sl of slotsOf(addDays(new Date(), i), true)) {
         const t = sl.at.getTime();
-        const open = openMeds(sl, now).filter(m => t >= (m.created || 0) - 60e3);
+        const open = remindMeds(sl, now).filter(m => t >= (m.created || 0) - 60e3);
         const ids = ["due", "nag", "snooze"].map(k => noteId(k + sl.key));
         if (!open.length) { if (t <= now + 60e3) doneIds.push(...ids); continue; }
         const many = open.length > 1, extra = { kind: "slot", keys: sl.key };

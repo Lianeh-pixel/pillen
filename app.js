@@ -79,6 +79,19 @@ function stateOf(slot, m, now = Date.now()) {
   return now - slot.at > LATE ? "missed" : "due";
 }
 const openMeds = (slot, now) => slot.meds.filter(m => { const s = stateOf(slot, m, now); return s === "due" || s === "upcoming"; });
+// „Automatisch“: keine Erinnerung, gilt zur Uhrzeit als eingenommen
+const isAuto = (m, t) => !!(m.auto && m.auto[t]);
+const remindMeds = (slot, now) => openMeds(slot, now).filter(m => !isAuto(m, slot.time));
+function autoTake() {
+  const now = Date.now(); let ch = false;
+  for (let i = -14; i <= 0; i++) for (const sl of slotsOf(addDays(new Date(), i))) for (const m of sl.meds) {
+    if (!isAuto(m, sl.time) || sl.at > now || sl.at < m.auto[sl.time] || entry(sl.key, m)) continue;
+    S.log[sl.key + "|" + m.id] = { s: "taken", at: sl.at.getTime(), auto: true };
+    if (m.stock != null) m.stock = Math.max(0, m.stock - (m.amount || 1));
+    updateLow(m); ch = true;
+  }
+  if (ch) save();
+}
 
 /* ---------- Einnahme ---------- */
 function mark(slot, meds, s) {
@@ -87,7 +100,7 @@ function mark(slot, meds, s) {
     if (old && old.s === s) continue;
     if (old && old.s === "taken" && m.stock != null) m.stock += m.amount || 1;
     if (s === "taken" && m.stock != null) m.stock = Math.max(0, m.stock - (m.amount || 1));
-    S.log[k] = { s, at: Date.now() };
+    S.log[k] = { s, at: Date.now(), ...(old && old.auto ? { auto: true } : {}) };
     updateLow(m);
   }
   delete S.snooze[slot.key];
@@ -151,7 +164,7 @@ let syncT = null;
 function queueSync() { if (NATIVE) { nativeQueue(); return; } if (!S.device || !S.push) return; clearTimeout(syncT); syncT = setTimeout(syncNow, 800); }
 async function syncNow() {
   if (!S.device || !S.push) return;
-  const meds = S.meds.map(m => { const a = stockAlertAt(m); return { id: m.id, name: m.name, dose: doseText(m).trim(), times: m.times || [], stockAt: a && !m.stockOk && m.stockMode !== "off" ? a.toISOString() : null, stockText: stockText(m) }; });
+  const meds = S.meds.map(m => { const a = stockAlertAt(m); return { id: m.id, name: m.name, dose: doseText(m).trim(), times: (m.times || []).filter(t => !isAuto(m, t)), stockAt: a && !m.stockOk && m.stockMode !== "off" ? a.toISOString() : null, stockText: stockText(m) }; });
   try {
     await pbRpc("pill_sync", { dev: S.device, meds });
     const now = Date.now();
@@ -162,7 +175,7 @@ async function pushSlot(sl) {
   if (NATIVE) { nativeQueue(); return; }
   if (!S.device || !S.push) return;
   // Mittel, die es zu dem Termin noch nicht gab, gelten als erledigt
-  const open = openMeds(sl).filter(m => sl.at.getTime() >= (m.created || 0) - 60e3).map(m => m.id);
+  const open = remindMeds(sl).filter(m => sl.at.getTime() >= (m.created || 0) - 60e3).map(m => m.id);
   try { await pbRpc("pill_slot", { dev: S.device, slot: sl.at.toISOString(), open }); } catch (e) { console.warn(e); }
 }
 function b64uBytes(s) { const b = atob(s.replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from(b, c => c.charCodeAt(0)); }
@@ -215,6 +228,7 @@ function applyTheme() {
 }
 
 function render() {
+  autoTake();
   document.querySelectorAll(".nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
   const app = $("#app");
   if (tab === "heute") app.innerHTML = viewToday();
@@ -253,10 +267,10 @@ function viewToday() {
       <div class="links"><button data-act="skip" data-slot="${keys}">✕ Auslassen</button><button data-act="snooze" data-slot="${keys}">↻ ${sz > Date.now() ? "Erinnert um " + hm(new Date(sz)) : "Verschieben"}</button></div></div>`;
   }
   // als Nächstes: kommende Termine untereinander in einem Kasten
-  let next = slots.filter(sl => sl.at > now && openMeds(sl).length);
-  if (!next.length) next = slotsOf(addDays(now, 1)).slice(0, 3);
+  let next = slots.filter(sl => sl.at > now && remindMeds(sl).length);
+  if (!next.length) next = slotsOf(addDays(now, 1)).filter(sl => remindMeds(sl).length).slice(0, 3);
   const rows = [];
-  next.forEach(sl => openMeds(sl, now.getTime()).forEach(m => rows.push({ sl, m })));
+  next.forEach(sl => remindMeds(sl, now.getTime()).forEach(m => rows.push({ sl, m })));
   if (rows.length) {
     const tomorrow = next[0] && dkey(next[0].at) !== dkey(now);
     h += `<div class="lbl">${due.length ? "Danach" : "Als Nächstes"}${tomorrow ? " · morgen" : ""}</div><div class="card">` + rows.map(({ sl, m }) =>
@@ -267,7 +281,7 @@ function viewToday() {
   slotsOf(now).forEach(sl => sl.meds.forEach(m => { const e = entry(sl.key, m); if (e) done.push({ sl, m, e }); else if (stateOf(sl, m) === "missed") done.push({ sl, m, e: { s: "missed" } }); }));
   if (done.length) {
     h += `<div class="lbl grey">Heute erledigt</div><div class="card">` + done.map(({ sl, m, e }) =>
-      `<div class="item done"><span class="tm">${sl.time}</span><div class="grow"><div class="nm">${esc(m.name)}</div><div class="ds">${e.s === "taken" ? "eingenommen um " + hm(new Date(e.at)) : e.s === "skipped" ? "ausgelassen" : "vergessen"}</div></div>` +
+      `<div class="item done"><span class="tm">${sl.time}</span><div class="grow"><div class="nm">${esc(m.name)}</div><div class="ds">${e.s === "taken" && e.auto ? "automatisch · " + esc(doseText(m)) + " abgezogen" : e.s === "taken" ? "eingenommen um " + hm(new Date(e.at)) : e.s === "skipped" ? "ausgelassen" : "vergessen"}</div></div>` +
       (e.s === "missed" ? `<button class="chk" data-act="tick" data-slot="${sl.key}" data-id="${m.id}" aria-label="Doch eingenommen"></button>` :
        `<button class="chk ${e.s === "taken" ? "on" : "skip"}" data-act="untick" data-slot="${sl.key}" data-id="${m.id}" aria-label="Rückgängig">${e.s === "taken" ? IC.check : IC.skip}</button>`) + `</div>`).join("") + `</div>`;
   }
@@ -390,7 +404,8 @@ function drawEdit() {
     <label class="l">Name</label><input class="field" data-f="name" value="${esc(m.name)}" placeholder="z. B. Vitamin D" autocomplete="off">
     <label class="l">Dosis</label><div class="two"><input class="field" inputmode="decimal" data-f="amount" value="${m.amount != null ? fmtNum(m.amount) : ""}"><select class="field" data-act="unitsel">${UNITS.map(u => `<option value="${u[0]}"${(unitInfo(m.unit) || UNITS[0]) === u ? " selected" : ""}>${u[0]}</option>`).join("")}</select><input type="hidden" data-f="unit" value="${esc((unitInfo(m.unit) || UNITS[0])[0])}"></div>
     <label class="l">Erinnerungen</label>
-    <div class="chips">${(m.times || []).map((t, i) => `<button class="chip" data-act="deltime" data-i="${i}">${t}<i>×</i></button>`).join("")}<label class="chip add">+ Uhrzeit<input type="time" data-act="addtime"></label></div>
+    <div class="card">${(m.times || []).map((t, i) => `<div class="trow"><span class="tt">${t}</span><div class="seg"><button data-act="tmode" data-i="${i}" data-m="" class="${isAuto(m, t) ? "" : "on"}">Erinnern</button><button data-act="tmode" data-i="${i}" data-m="auto" class="${isAuto(m, t) ? "on" : ""}">Automatisch</button></div><button class="x" data-act="deltime" data-i="${i}" aria-label="Entfernen">×</button></div>`).join("")}<label class="addt">+ Uhrzeit<input type="time" data-act="addtime"></label></div>
+    ${Object.keys(m.auto || {}).length ? `<div class="hint">Automatisch: keine Mitteilung, gilt zur Uhrzeit als eingenommen und wird vom Vorrat abgezogen.</div>` : ""}
     <label class="l">Vorrat</label>
     <div class="inl"><input class="field" inputmode="decimal" data-f="stock" value="${m.stock != null ? fmtNum(m.stock) : ""}" placeholder="optional"><span>${esc(m.unit || "Stück")} übrig</span></div>
     <label class="l">Erinnern, wenn der Vorrat zur Neige geht</label>
@@ -412,6 +427,7 @@ function saveEdit() {
   if (m.amount == null || m.amount <= 0) m.amount = 1;
   m.unit = (m.unit || "").trim() || "Stück";
   m.times = [...new Set(m.times)].sort();
+  if (m.auto) for (const t of Object.keys(m.auto)) if (!m.times.includes(t)) delete m.auto[t];
   if (m.stockMode === "rest" && m.stock == null) toast("Tipp: Trag den Vorrat ein, damit die Restbestand-Erinnerung funktioniert.", 5000);
   const i = S.meds.findIndex(x => x.id === m.id), old = S.meds[i];
   delete m.isNew;
@@ -453,12 +469,13 @@ document.addEventListener("click", async e => {
   else if (a === "close") closeSheet();
   else if (a === "save") saveEdit();
   else if (a === "del") { if (confirm(edit.name + " wirklich löschen? Der Verlauf dieses Mittels wird ausgeblendet.")) { S.meds = S.meds.filter(x => x.id !== edit.id); save(); closeSheet(); render(); } }
+  else if (a === "tmode") { readEdit(); const t = edit.times[+b.dataset.i]; edit.auto = edit.auto || {}; if (b.dataset.m) { if (!edit.auto[t]) edit.auto[t] = Date.now(); } else delete edit.auto[t]; drawEdit(); }
   else if (a === "deltime") { readEdit(); edit.times.splice(+b.dataset.i, 1); drawEdit(); }
   else if (a === "smode") { readEdit(); edit.stockMode = b.dataset.m; drawEdit(); }
   else if (a === "take" || a === "skip") { b.dataset.slot.split(",").map(slotByKey).filter(Boolean).forEach(sl => mark(sl, openMeds(sl).filter(m => stateOf(sl, m) === "due"), a === "take" ? "taken" : "skipped")); render(); if (a === "take") toast("Gut gemacht ✓"); }
   else if (a === "snooze") { b.dataset.slot.split(",").map(slotByKey).filter(Boolean).forEach(sl => snooze(sl, 15)); render(); }
   else if (a === "tick") { const sl = slotByKey(b.dataset.slot), m = S.meds.find(x => x.id === b.dataset.id); if (sl && m) { mark(sl, [m], "taken"); render(); } }
-  else if (a === "untick") { const sl = slotByKey(b.dataset.slot), m = S.meds.find(x => x.id === b.dataset.id); if (sl && m) { unmark(sl, m); render(); } }
+  else if (a === "untick") { const sl = slotByKey(b.dataset.slot), m = S.meds.find(x => x.id === b.dataset.id); if (sl && m) { const e = entry(sl.key, m); if (e && e.auto && e.s === "taken") mark(sl, [m], "skipped"); else unmark(sl, m); render(); } }
   else if (a === "refill") {
     const m = S.meds.find(x => x.id === b.dataset.id); if (!m) return;
     if (m.stock == null && m.stockMode !== "rest") { m.stockOk = true; m.stockSince = dkey(new Date()); if (m.stockMode === "date") m.stockDate = null; save(); render(); toast("Erledigt. Datum und Zeitspanne kannst du beim Mittel neu setzen."); return; }

@@ -16,7 +16,7 @@
   try { const t = JSON.parse(localStorage.getItem("pillen") || "{}").theme || "auto";
     document.documentElement.dataset.theme = t === "auto" ? (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark") : t; } catch (e) { document.documentElement.dataset.theme = "dark"; }
 </script>
-<link rel="stylesheet" href="style.css?v=12">
+<link rel="stylesheet" href="style.css?v=13">
 </head>
 <body>
 <main id="app"></main>
@@ -28,9 +28,9 @@
 <div class="sheet-back" id="sheetBack" hidden></div>
 <div class="sheet" id="sheet" hidden></div>
 <div class="toast" id="toast" hidden></div>
-<script src="config.js?v=12"></script>
-<script src="shared.js?v=12"></script>
-<script src="native.js?v=12"></script>
-<script src="app.js?v=12"></script>
+<script src="config.js?v=13"></script>
+<script src="shared.js?v=13"></script>
+<script src="native.js?v=13"></script>
+<script src="app.js?v=13"></script>
 </body>
 </html>
