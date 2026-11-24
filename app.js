@@ -430,7 +430,6 @@ function openSettings() {
     <div class="card"><div class="row-set"><div><div class="t">Erinnerungen per Push</div><div class="x">${pushTxt}</div></div>${S.push && perm === "granted" ? `<button class="a" data-act="testpush">Test senden</button>` : `<button class="a" data-act="push">Einschalten</button>`}</div></div>
     <div class="seg" style="margin-top:12px">${[["still", "Ohne Ton"], ["vib", "Nur Vibration"], ["ton", "Mit Ton"]].map(([k, t]) => `<button data-act="sound" data-m="${k}" class="${S.sound === k ? "on" : ""}">${t}</button>`).join("")}</div>
     ${S.sound === "vib" ? `<div class="hint">Damit es nur vibriert: Android-Einstellungen → Apps → Pillen → Benachrichtigungen → Ton auf „Keiner“ stellen.</div>` : ""}
-    <div class="hint">Zur Uhrzeit kommt eine Mitteilung. Ist nach 30 Minuten nichts abgehakt, erinnert sie noch einmal, danach nicht mehr. In der Mitteilung kannst du direkt „Eingenommen“ oder „In 15 Min.“ tippen.</div>
     <div class="lbl">Daten</div>
     <div class="card"><div class="row-set"><div><div class="t">Sicherung speichern</div><div class="x">Alle Mittel und der Verlauf als Datei</div></div><button class="a" data-act="export">Speichern</button></div>
     <div class="row-set"><div><div class="t">Sicherung laden</div><div class="x">Ersetzt die Daten auf diesem Gerät</div></div><label class="a" style="color:var(--acc);font-weight:600;font-size:14px">Laden<input type="file" accept="application/json,.json" data-act="import" hidden></label></div></div>
