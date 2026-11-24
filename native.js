@@ -14,7 +14,8 @@ async function nativeSetup() {
     await LN.createChannel({ id: CHANNEL.ton, name: "Erinnerungen mit Ton", importance: 5, visibility: 1, vibration: true });
     await LN.createChannel({ id: CHANNEL.vib, name: "Erinnerungen nur Vibration", importance: 5, visibility: 1, vibration: true, sound: "stille.wav" });
     await LN.createChannel({ id: CHANNEL.still, name: "Erinnerungen ohne Ton", importance: 4, visibility: 1, vibration: false, sound: "stille.wav" });
-    await LN.registerActionTypes({ types: [{ id: "pill", actions: [{ id: "taken", title: "Eingenommen" }, { id: "snooze", title: "In 15 Min." }] }] });
+    await LN.registerActionTypes({ types: [{ id: "pill", actions: [{ id: "taken", title: "Eingenommen" }, { id: "snooze", title: "In 15 Min." }] },
+      { id: "pills", actions: [{ id: "taken", title: "Alle eingenommen" }, { id: "snooze", title: "In 15 Min." }] }] });
   } catch (e) { console.warn(e); }
   LN.addListener("localNotificationActionPerformed", ev => {
     const x = (ev.notification && ev.notification.extra) || {};
@@ -55,18 +56,18 @@ async function nativeSchedule() {
     const now = Date.now(), list = [], doneIds = [];
     const chan = CHANNEL[S.sound] || CHANNEL.ton;
     const add = (id, at, title, body, extra, actions) => list.push({ id, title, body, channelId: chan, smallIcon: "ic_stat_pill", iconColor: "#5f8fbf",
-      schedule: { at: new Date(at), allowWhileIdle: true }, extra, ...(actions ? { actionTypeId: "pill" } : {}) });
+      schedule: { at: new Date(at), allowWhileIdle: true }, extra, ...(actions ? { actionTypeId: actions } : {}) });
     for (let i = -1; i <= DAYS_AHEAD; i++) {
       for (const sl of slotsOf(addDays(new Date(), i), true)) {
         const t = sl.at.getTime();
         const open = openMeds(sl, now).filter(m => t >= (m.created || 0) - 60e3);
         const ids = ["due", "nag", "snooze"].map(k => noteId(k + sl.key));
         if (!open.length) { if (t <= now + 60e3) doneIds.push(...ids); continue; }
-        const body = medLine(open), extra = { kind: "slot", keys: sl.key };
+        const body = medLine(open), extra = { kind: "slot", keys: sl.key }, act = open.length > 1 ? "pills" : "pill";
         const sz = S.snooze[sl.key];
-        if (t > now) add(ids[0], t, "Zeit für deine Mittel", body, extra, true);
-        if (sz && sz > now) add(ids[2], sz, "Erinnerung: " + sl.time + " Uhr", body, extra, true);
-        else if (!sz && t + NAG > now && now - t < LATE) add(ids[1], t + NAG, "Noch nicht eingenommen", body, extra, true);
+        if (t > now) add(ids[0], t, "Zeit für deine Mittel", body, extra, act);
+        if (sz && sz > now) add(ids[2], sz, "Erinnerung: " + sl.time + " Uhr", body, extra, act);
+        else if (!sz && t + NAG > now && now - t < LATE) add(ids[1], t + NAG, "Noch nicht eingenommen", body, extra, act);
       }
     }
     // Vorrat
