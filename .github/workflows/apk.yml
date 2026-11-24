@@ -15,6 +15,12 @@ jobs:
         with: { node-version: 20 }
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 17 }
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('package-lock.json') }}
       - run: npm ci
       - run: node native/build-www.js
       - run: npx cap add android
@@ -29,7 +35,7 @@ jobs:
           openssl enc -d -aes-256-cbc -pbkdf2 -in native/pillen.jks.enc -out android/app/pillen.jks -pass env:PILLEN_KEY_PASS
       - name: Bauen
         env: { PILLEN_KEY_PASS: "${{ secrets.KEY_PASS }}" }
-        run: cd android && if [ "$SIGNED" = yes ]; then ./gradlew assembleRelease --no-daemon; else ./gradlew assembleDebug --no-daemon; fi
+        run: cd android && if [ "$SIGNED" = yes ]; then (./gradlew assembleRelease --no-daemon || (sleep 30 && ./gradlew assembleRelease --no-daemon)); else ./gradlew assembleDebug --no-daemon; fi
       - if: env.SIGNED == 'yes'
         run: cp android/app/build/outputs/apk/release/app-release.apk pillen.apk
       - if: env.SIGNED == 'yes'
