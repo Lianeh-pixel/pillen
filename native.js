@@ -54,7 +54,7 @@ async function nativeSchedule() {
   try {
     const now = Date.now(), list = [], doneIds = [];
     const chan = CHANNEL[S.sound] || CHANNEL.ton;
-    const add = (id, at, title, body, extra, actions) => list.push({ id, title, body, channelId: chan, smallIcon: "ic_stat_pill", iconColor: "#5f8fbf",
+    const add = (id, at, title, body, extra, actions, largeBody) => list.push({ id, title, body, ...(largeBody ? { largeBody } : {}), channelId: chan, smallIcon: "ic_stat_pill", iconColor: "#5f8fbf",
       schedule: { at: new Date(at), allowWhileIdle: true }, extra, ...(actions ? { actionTypeId: "pill" } : {}) });
     for (let i = -1; i <= DAYS_AHEAD; i++) {
       for (const sl of slotsOf(addDays(new Date(), i), true)) {
@@ -62,11 +62,12 @@ async function nativeSchedule() {
         const open = openMeds(sl, now).filter(m => t >= (m.created || 0) - 60e3);
         const ids = ["due", "nag", "snooze"].map(k => noteId(k + sl.key));
         if (!open.length) { if (t <= now + 60e3) doneIds.push(...ids); continue; }
-        const body = medLine(open), extra = { kind: "slot", keys: sl.key };
+        const many = open.length > 1, extra = { kind: "slot", keys: sl.key };
+        const body = many ? open.map(m => m.name).join(", ") : medLine(open), lines = many ? open.map(m => medLine([m])).join("\n") : null;
         const sz = S.snooze[sl.key];
-        if (t > now) add(ids[0], t, "Zeit für deine Mittel", body, extra, true);
-        if (sz && sz > now) add(ids[2], sz, "Erinnerung: " + sl.time + " Uhr", body, extra, true);
-        else if (!sz && t + NAG > now && now - t < LATE) add(ids[1], t + NAG, "Noch nicht eingenommen", body, extra, true);
+        if (t > now) add(ids[0], t, "Zeit für deine Mittel", body, extra, true, lines);
+        if (sz && sz > now) add(ids[2], sz, "Erinnerung: " + sl.time + " Uhr", body, extra, true, lines);
+        else if (!sz && t + NAG > now && now - t < LATE) add(ids[1], t + NAG, "Noch nicht eingenommen", body, extra, true, lines);
       }
     }
     // Vorrat
