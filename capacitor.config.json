@@ -1,0 +1,9 @@
+{
+  "appId": "de.lianeh.pillen",
+  "appName": "Pillen",
+  "webDir": "www",
+  "android": { "backgroundColor": "#25303f" },
+  "plugins": {
+    "LocalNotifications": { "smallIcon": "ic_stat_pill", "iconColor": "#5f8fbf" }
+  }
+}

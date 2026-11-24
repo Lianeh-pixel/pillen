@@ -4,6 +4,7 @@
 const CFG = self.PB_CONFIG;
 const PUSH_FN = CFG.supabaseUrl + "/functions/v1/pillen-push";
 const KEY = "pillen";
+const NATIVE = !!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform());   // Android-App statt PWA
 const LATE = 3 * 3600e3;        // nach 3 Std. gilt eine Einnahme als vergessen
 const ONTIME = 30 * 60e3;       // pünktlich = höchstens 30 Min. nach der Uhrzeit
 // Darreichungsformen: [Mehrzahl, Einzahl, Symbol]
@@ -18,7 +19,7 @@ function load() {
   let s = {}; try { s = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) {}
   return Object.assign({ meds: [], log: {}, snooze: {}, theme: "auto", sound: "ton", device: null, push: false }, s);
 }
-function fixSound() { if (S.sound !== "still") S.sound = "ton"; }
+function fixSound() { if (S.sound !== "still" && !(NATIVE && S.sound === "vib")) S.sound = "ton"; }
 function save() { localStorage.setItem(KEY, JSON.stringify(S)); queueSync(); }
 
 /* ---------- Hilfen ---------- */
@@ -147,7 +148,7 @@ function refill(m, n) {
 
 /* ---------- Abgleich für Push ---------- */
 let syncT = null;
-function queueSync() { if (!S.device || !S.push) return; clearTimeout(syncT); syncT = setTimeout(syncNow, 800); }
+function queueSync() { if (NATIVE) { nativeQueue(); return; } if (!S.device || !S.push) return; clearTimeout(syncT); syncT = setTimeout(syncNow, 800); }
 async function syncNow() {
   if (!S.device || !S.push) return;
   const meds = S.meds.map(m => { const a = stockAlertAt(m); return { id: m.id, name: m.name, dose: doseText(m).trim(), times: m.times || [], stockAt: a && !m.stockOk && m.stockMode !== "off" ? a.toISOString() : null, stockText: stockText(m) }; });
@@ -158,6 +159,7 @@ async function syncNow() {
   } catch (e) { console.warn(e); }
 }
 async function pushSlot(sl) {
+  if (NATIVE) { nativeQueue(); return; }
   if (!S.device || !S.push) return;
   // Mittel, die es zu dem Termin noch nicht gab, gelten als erledigt
   const open = openMeds(sl).filter(m => sl.at.getTime() >= (m.created || 0) - 60e3).map(m => m.id);
@@ -209,6 +211,7 @@ function applyTheme() {
   const t = S.theme === "auto" ? (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark") : S.theme;
   document.documentElement.dataset.theme = t;
   $("#themeColor").content = t === "light" ? "#f6f2ee" : "#25303f";
+  if (NATIVE) nativeBars(t !== "light");
 }
 
 function render() {
@@ -418,21 +421,23 @@ function saveEdit() {
   updateLow(m);
   if (i >= 0) S.meds[i] = m; else S.meds.push(m);
   save(); closeSheet(); render();
-  if (!S.push) toast("Gespeichert. Tipp: Mitteilungen über ⚙ einschalten.", 4500);
+  if (!S.push && !NATIVE) toast("Gespeichert. Tipp: Mitteilungen über ⚙ einschalten.", 4500);
 }
 
-function openSettings() {
-  const perm = "Notification" in window ? Notification.permission : "denied";
-  const pushTxt = S.push && perm === "granted" ? "eingeschaltet" : perm === "denied" ? "vom Gerät blockiert" : "aus";
+async function openSettings() {
+  const perm = NATIVE ? await nativePerm() : "Notification" in window ? Notification.permission : "denied";
+  const on = NATIVE ? perm === "granted" : S.push && perm === "granted";
+  const sounds = NATIVE ? [["still", "Ohne Ton"], ["vib", "Nur Vibration"], ["ton", "Mit Ton"]] : [["still", "Ohne Ton"], ["ton", "Mit Ton"]];
+  const pushTxt = on ? "eingeschaltet" : perm === "denied" ? "vom Gerät blockiert" : "aus";
   openSheet(`<h2>Einstellungen</h2>
     <div class="lbl">Darstellung</div>
     <div class="seg">${[["auto", "Automatisch"], ["dark", "Nachtblau"], ["light", "Altrosa"]].map(([k, t]) => `<button data-act="theme" data-m="${k}" class="${S.theme === k ? "on" : ""}">${t}</button>`).join("")}</div>
     <div class="lbl">Mitteilungen</div>
-    <div class="card"><div class="row-set"><div><div class="t">Erinnerungen per Push</div><div class="x">${pushTxt}</div></div>${S.push && perm === "granted" ? `<button class="a" data-act="testpush">Test senden</button>` : `<button class="a" data-act="push">Einschalten</button>`}</div></div>
-    <div class="seg" style="margin-top:12px">${[["still", "Ohne Ton"], ["ton", "Mit Ton"]].map(([k, t]) => `<button data-act="sound" data-m="${k}" class="${S.sound === k ? "on" : ""}">${t}</button>`).join("")}</div>
+    <div class="card"><div class="row-set"><div><div class="t">Erinnerungen${NATIVE ? "" : " per Push"}</div><div class="x">${pushTxt}</div></div>${on ? `<button class="a" data-act="testpush">Test senden</button>` : `<button class="a" data-act="push">Einschalten</button>`}</div></div>
+    <div class="seg" style="margin-top:12px">${sounds.map(([k, t]) => `<button data-act="sound" data-m="${k}" class="${S.sound === k ? "on" : ""}">${t}</button>`).join("")}</div>
     <div class="lbl">Daten</div>
     <div class="card"><div class="row-set"><div><div class="t">Sicherung speichern</div><div class="x">Alle Mittel und der Verlauf als Datei</div></div><button class="a" data-act="export">Speichern</button></div>
-    <div class="row-set"><div><div class="t">Sicherung laden</div><div class="x">Ersetzt die Daten auf diesem Gerät</div></div><label class="a" style="color:var(--acc);font-weight:600;font-size:14px">Laden<input type="file" accept="application/json,.json" data-act="import" hidden></label></div></div>
+    <div class="row-set"><div><div class="t">Sicherung laden</div><div class="x">Ersetzt die Daten auf diesem Gerät</div></div><label class="a" style="color:var(--acc);font-weight:600;font-size:14px">Laden<input type="file" accept="${NATIVE ? "" : "application/json,.json"}" data-act="import" hidden></label></div></div>
     <button class="btn ghost" data-act="close" style="margin-top:22px">Fertig</button>`);
 }
 
@@ -463,13 +468,17 @@ document.addEventListener("click", async e => {
   else if (a === "hmode") { hist = { mode: b.dataset.m, off: 0 }; render(); }
   else if (a === "hprev") { hist.off--; render(); }
   else if (a === "hnext") { if (hist.off < 0) hist.off++; render(); }
-  else if (a === "sound") { S.sound = b.dataset.m; save(); pbSet("sound", S.sound).catch(() => {}); openSettings(); }
+  else if (a === "sound") { S.sound = b.dataset.m; save(); if (NATIVE) nativeSchedule(); pbSet("sound", S.sound).catch(() => {}); openSettings(); }
   else if (a === "theme") { S.theme = b.dataset.m; save(); applyTheme(); openSettings(); }
+  else if (a === "push" && NATIVE) { if (await nativeAsk()) { nativeSchedule(); openSettings(); } }
+  else if (a === "testpush" && NATIVE) nativeTest();
   else if (a === "push") { if (await enablePush()) { toast("Mitteilungen sind eingeschaltet."); openSettings(); } }
   else if (a === "testpush") { try { await pbRpc("pill_test", { dev: S.device }); toast("Test kommt innerhalb einer Minute – du kannst die App dafür schließen.", 5000); } catch (err) { toast("Test fehlgeschlagen: " + err.message, 8000); } }
   else if (a === "export") {
-    const blob = new Blob([JSON.stringify({ app: "pillen", version: 1, saved: new Date().toISOString(), meds: S.meds, log: S.log }, null, 1)], { type: "application/json" });
-    const url = URL.createObjectURL(blob), x = document.createElement("a"); x.href = url; x.download = "pillen-sicherung-" + dkey(new Date()) + ".json"; x.click(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+    const json = JSON.stringify({ app: "pillen", version: 1, saved: new Date().toISOString(), meds: S.meds, log: S.log }, null, 1), name = "pillen-sicherung-" + dkey(new Date()) + ".json";
+    if (NATIVE) { nativeExport(json, name); return; }
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob), x = document.createElement("a"); x.href = url; x.download = name; x.click(); setTimeout(() => URL.revokeObjectURL(url), 2000);
   }
 });
 document.addEventListener("change", async e => {
@@ -489,9 +498,10 @@ document.querySelectorAll(".nav button").forEach(b => b.addEventListener("click"
 applyTheme();
 matchMedia("(prefers-color-scheme: light)").addEventListener("change", applyTheme);
 render();
-if ("serviceWorker" in navigator) {
+if (NATIVE) { fixSound(); nativeSetup(); }
+else if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js").catch(() => {});
   navigator.serviceWorker.addEventListener("message", ev => { if (ev.data && ev.data.type === "inbox") readInbox(); else if (tab === "heute") render(); });
 }
-fixSound(); readInbox(); checkPush(); pbSet("sound", S.sound).catch(() => {});
-document.addEventListener("visibilitychange", () => { if (!document.hidden) { readInbox(); render(); queueSync(); } });
+if (!NATIVE) { fixSound(); readInbox(); checkPush(); pbSet("sound", S.sound).catch(() => {}); }
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { if (!NATIVE) readInbox(); render(); queueSync(); } });

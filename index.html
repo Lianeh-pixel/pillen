@@ -11,8 +11,6 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <script>
   // Darstellung vor dem ersten Zeichnen setzen (kein Aufblitzen)
   try { const t = JSON.parse(localStorage.getItem("pillen") || "{}").theme || "auto";
@@ -32,6 +30,7 @@
 <div class="toast" id="toast" hidden></div>
 <script src="config.js?v=12"></script>
 <script src="shared.js?v=12"></script>
+<script src="native.js?v=12"></script>
 <script src="app.js?v=12"></script>
 </body>
 </html>
