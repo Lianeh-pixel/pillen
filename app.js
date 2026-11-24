@@ -405,7 +405,6 @@ function drawEdit() {
     <label class="l">Dosis</label><div class="two"><input class="field" inputmode="decimal" data-f="amount" value="${m.amount != null ? fmtNum(m.amount) : ""}"><select class="field" data-act="unitsel">${UNITS.map(u => `<option value="${u[0]}"${(unitInfo(m.unit) || UNITS[0]) === u ? " selected" : ""}>${u[0]}</option>`).join("")}</select><input type="hidden" data-f="unit" value="${esc((unitInfo(m.unit) || UNITS[0])[0])}"></div>
     <label class="l">Erinnerungen</label>
     <div class="card">${(m.times || []).map((t, i) => `<div class="trow"><span class="tt">${t}</span><div class="seg"><button data-act="tmode" data-i="${i}" data-m="" class="${isAuto(m, t) ? "" : "on"}">Erinnern</button><button data-act="tmode" data-i="${i}" data-m="auto" class="${isAuto(m, t) ? "on" : ""}">Automatisch</button></div><button class="x" data-act="deltime" data-i="${i}" aria-label="Entfernen">×</button></div>`).join("")}<label class="addt">+ Uhrzeit<input type="time" data-act="addtime"></label></div>
-    ${Object.keys(m.auto || {}).length ? `<div class="hint">Automatisch: keine Mitteilung, gilt zur Uhrzeit als eingenommen und wird vom Vorrat abgezogen.</div>` : ""}
     <label class="l">Vorrat</label>
     <div class="inl"><input class="field" inputmode="decimal" data-f="stock" value="${m.stock != null ? fmtNum(m.stock) : ""}" placeholder="optional"><span>${esc(m.unit || "Stück")} übrig</span></div>
     <label class="l">Erinnern, wenn der Vorrat zur Neige geht</label>
