@@ -84,6 +84,13 @@ const isAuto = (m, t) => !!(m.auto && m.auto[t]);
 const remindMeds = (slot, now) => openMeds(slot, now).filter(m => !isAuto(m, slot.time));
 function autoTake() {
   const now = Date.now(); let ch = false;
+  // Einnahmen späterer Tage können nicht vorab abgehakt werden
+  const today = dkey(new Date());
+  for (const k of Object.keys(S.log)) if (k.slice(0, 10) > today) {
+    const m = S.meds.find(x => x.id === k.split("|")[1]);
+    if (m && S.log[k].s === "taken" && m.stock != null) { m.stock += m.amount || 1; updateLow(m); }
+    delete S.log[k]; ch = true;
+  }
   for (let i = -14; i <= 0; i++) for (const sl of slotsOf(addDays(new Date(), i))) for (const m of sl.meds) {
     if (!isAuto(m, sl.time) || sl.at > now || sl.at < m.auto[sl.time] || entry(sl.key, m)) continue;
     S.log[sl.key + "|" + m.id] = { s: "taken", at: sl.at.getTime(), auto: true };
@@ -274,7 +281,7 @@ function viewToday() {
   if (rows.length) {
     const tomorrow = next[0] && dkey(next[0].at) !== dkey(now);
     h += `<div class="lbl">${due.length ? "Danach" : "Als Nächstes"}${tomorrow ? " · morgen" : ""}</div><div class="card">` + rows.map(({ sl, m }) =>
-      `<div class="item"><span class="tm acc">${sl.time}</span><div class="grow"><div class="nm">${esc(m.name)}</div><div class="ds">${esc(doseText(m))}</div></div><button class="chk" data-act="tick" data-slot="${sl.key}" data-id="${m.id}" aria-label="Eingenommen"></button></div>`).join("") + `</div>`;
+      `<div class="item"><span class="tm acc">${sl.time}</span><div class="grow"><div class="nm">${esc(m.name)}</div><div class="ds">${esc(doseText(m))}</div></div>${dkey(sl.at) === dkey(now) ? `<button class="chk" data-act="tick" data-slot="${sl.key}" data-id="${m.id}" aria-label="Eingenommen"></button>` : ""}</div>`).join("") + `</div>`;
   } else if (!due.length) h += `<div class="card calm">Für heute ist alles erledigt.</div>`;
   // erledigt heute
   const done = [];
