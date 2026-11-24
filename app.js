@@ -18,6 +18,7 @@ function load() {
   let s = {}; try { s = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) {}
   return Object.assign({ meds: [], log: {}, snooze: {}, theme: "auto", sound: "ton", device: null, push: false }, s);
 }
+function fixSound() { if (S.sound !== "still") S.sound = "ton"; }
 function save() { localStorage.setItem(KEY, JSON.stringify(S)); queueSync(); }
 
 /* ---------- Hilfen ---------- */
@@ -428,8 +429,7 @@ function openSettings() {
     <div class="seg">${[["auto", "Automatisch"], ["dark", "Nachtblau"], ["light", "Altrosa"]].map(([k, t]) => `<button data-act="theme" data-m="${k}" class="${S.theme === k ? "on" : ""}">${t}</button>`).join("")}</div>
     <div class="lbl">Mitteilungen</div>
     <div class="card"><div class="row-set"><div><div class="t">Erinnerungen per Push</div><div class="x">${pushTxt}</div></div>${S.push && perm === "granted" ? `<button class="a" data-act="testpush">Test senden</button>` : `<button class="a" data-act="push">Einschalten</button>`}</div></div>
-    <div class="seg" style="margin-top:12px">${[["still", "Ohne Ton"], ["vib", "Nur Vibration"], ["ton", "Mit Ton"]].map(([k, t]) => `<button data-act="sound" data-m="${k}" class="${S.sound === k ? "on" : ""}">${t}</button>`).join("")}</div>
-    ${S.sound === "vib" ? `<div class="hint">Damit es nur vibriert: Android-Einstellungen → Apps → Pillen → Benachrichtigungen → Ton auf „Keiner“ stellen.</div>` : ""}
+    <div class="seg" style="margin-top:12px">${[["still", "Ohne Ton"], ["ton", "Mit Ton"]].map(([k, t]) => `<button data-act="sound" data-m="${k}" class="${S.sound === k ? "on" : ""}">${t}</button>`).join("")}</div>
     <div class="lbl">Daten</div>
     <div class="card"><div class="row-set"><div><div class="t">Sicherung speichern</div><div class="x">Alle Mittel und der Verlauf als Datei</div></div><button class="a" data-act="export">Speichern</button></div>
     <div class="row-set"><div><div class="t">Sicherung laden</div><div class="x">Ersetzt die Daten auf diesem Gerät</div></div><label class="a" style="color:var(--acc);font-weight:600;font-size:14px">Laden<input type="file" accept="application/json,.json" data-act="import" hidden></label></div></div>
@@ -493,5 +493,5 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js").catch(() => {});
   navigator.serviceWorker.addEventListener("message", ev => { if (ev.data && ev.data.type === "inbox") readInbox(); else if (tab === "heute") render(); });
 }
-readInbox(); checkPush(); pbSet("sound", S.sound).catch(() => {});
+fixSound(); readInbox(); checkPush(); pbSet("sound", S.sound).catch(() => {});
 document.addEventListener("visibilitychange", () => { if (!document.hidden) { readInbox(); render(); queueSync(); } });
