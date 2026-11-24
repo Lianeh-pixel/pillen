@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pillen</title>
+<meta name="theme-color" content="#25303f" id="themeColor">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pillen">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<script>
+  // Darstellung vor dem ersten Zeichnen setzen (kein Aufblitzen)
+  try { const t = JSON.parse(localStorage.getItem("pillen") || "{}").theme || "auto";
+    document.documentElement.dataset.theme = t === "auto" ? (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark") : t; } catch (e) { document.documentElement.dataset.theme = "dark"; }
+</script>
+<link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+<main id="app"></main>
+<nav class="nav" id="nav">
+  <button data-tab="heute"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>Heute</button>
+  <button data-tab="mittel"><svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="4" transform="rotate(-35 12 12)"/><path d="M9.7 8.7l4.6 6.6"/></svg>Mittel</button>
+  <button data-tab="verlauf"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>Verlauf</button>
+</nav>
+<div class="sheet-back" id="sheetBack" hidden></div>
+<div class="sheet" id="sheet" hidden></div>
+<div class="toast" id="toast" hidden></div>
+<script src="config.js?v=1"></script>
+<script src="shared.js?v=1"></script>
+<script src="app.js?v=1"></script>
+</body>
+</html>
