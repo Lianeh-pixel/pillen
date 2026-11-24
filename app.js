@@ -465,7 +465,7 @@ document.addEventListener("click", async e => {
   else if (a === "hnext") { if (hist.off < 0) hist.off++; render(); }
   else if (a === "theme") { S.theme = b.dataset.m; save(); applyTheme(); openSettings(); }
   else if (a === "push") { if (await enablePush()) { toast("Mitteilungen sind eingeschaltet."); openSettings(); } }
-  else if (a === "testpush") { try { await pbRpc("pill_test", { dev: S.device }); toast("Test kommt in wenigen Sekunden – du kannst die App dafür schließen.", 5000); } catch (err) { toast("Test fehlgeschlagen: " + err.message, 8000); } }
+  else if (a === "testpush") { try { await pbRpc("pill_test", { dev: S.device }); toast("Test kommt innerhalb einer Minute – du kannst die App dafür schließen.", 5000); } catch (err) { toast("Test fehlgeschlagen: " + err.message, 8000); } }
   else if (a === "export") {
     const blob = new Blob([JSON.stringify({ app: "pillen", version: 1, saved: new Date().toISOString(), meds: S.meds, log: S.log }, null, 1)], { type: "application/json" });
     const url = URL.createObjectURL(blob), x = document.createElement("a"); x.href = url; x.download = "pillen-sicherung-" + dkey(new Date()) + ".json"; x.click(); setTimeout(() => URL.revokeObjectURL(url), 2000);
