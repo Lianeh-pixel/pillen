@@ -381,11 +381,13 @@ function viewHistory() {
   }).join("")}</div>`;
   // Liste der Tage (neueste zuerst)
   const list = days.filter(x => x.st && x.st.items.length).reverse().slice(0, 31);
+  // morgen: geplante Einnahmen
+  if (hist.off === 0) { const d = addDays(today, 1), items = []; slotsOf(d).forEach(sl => sl.meds.forEach(m => items.push({ sl, m, s: "planned" }))); if (items.length) list.unshift({ d, st: { items } }); }
   if (!list.length) h += `<div class="card calm">In diesem Zeitraum gibt es noch keine Einträge.</div>`;
   list.forEach(({ d, st }) => {
-    const dd = dkey(d) === dkey(today) ? "Heute" : dkey(d) === dkey(addDays(today, -1)) ? "Gestern · " + d.toLocaleDateString("de-DE", { weekday: "long" }) : d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
+    const dd = dkey(d) === dkey(addDays(today, 1)) ? "Morgen" : dkey(d) === dkey(today) ? "Heute" : dkey(d) === dkey(addDays(today, -1)) ? "Gestern · " + d.toLocaleDateString("de-DE", { weekday: "long" }) : d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
     h += `<div class="lbl">${dd}</div><div class="card">` + st.items.map(({ sl, m, s, e }) =>
-      `<div class="item"><span class="tm">${sl.time}</span><div class="nm grow">${esc(m.name)}</div>${s === "taken" ? `<span class="st-ok">${hm(new Date(e.at))}</span>` : s === "skipped" ? `<span class="st-skip">ausgelassen</span>` : `<span class="st-miss">vergessen</span>`}</div>`).join("") + `</div>`;
+      `<div class="item"><span class="tm">${sl.time}</span><div class="nm grow">${esc(m.name)}</div>${s === "planned" ? `<span class="st-skip">${isAuto(m, sl.time) ? "automatisch" : "geplant"}</span>` : s === "taken" ? `<span class="st-ok">${hm(new Date(e.at))}</span>` : s === "skipped" ? `<span class="st-skip">ausgelassen</span>` : `<span class="st-miss">vergessen</span>`}</div>`).join("") + `</div>`;
   });
   return h;
 }
