@@ -39,7 +39,6 @@ const unitFor = (m, n) => { const u = m.unit || "Stück"; if (n === 1) return u.
 function toast(t, ms = 3200) { const el = $("#toast"); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, ms); }
 
 const IC = {
-  pill: '<svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="4" transform="rotate(-35 12 12)"/><path d="M9.7 8.7l4.6 6.6"/></svg>',
   round: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M8 12h8"/></svg>',
   drop: '<svg viewBox="0 0 24 24"><path d="M12 4c3 4 5.5 7 5.5 10a5.5 5.5 0 0 1-11 0C6.5 11 9 8 12 4z"/></svg>',
   check: '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
@@ -49,7 +48,7 @@ const IC = {
   back: '<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
   trash: '<svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg>'
 };
-const medIcon = m => /tropf|ml/i.test(m.unit || "") ? IC.drop : /kapsel/i.test(m.unit || "") ? IC.pill : IC.round;
+const medIcon = m => /tropf|ml/i.test(m.unit || "") ? IC.drop : IC.round;
 
 /* ---------- Termine ---------- */
 // Alle Termine eines Tages: [{key, at: Date, time, meds:[med]}]
