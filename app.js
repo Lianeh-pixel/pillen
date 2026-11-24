@@ -385,7 +385,6 @@ function drawEdit() {
     <label class="l">Erinnern, wenn der Vorrat zur Neige geht</label>
     <div class="seg">${[["off", "Aus"], ["rest", "Restbestand"], ["date", "Datum"], ["span", "Zeitspanne"]].map(([k, t]) => `<button data-act="smode" data-m="${k}" class="${(m.stockMode || "off") === k ? "on" : ""}">${t}</button>`).join("")}</div>
     ${modeField}
-    ${m.stockMode === "rest" ? `<div class="hint">Der Vorrat zählt beim Abhaken automatisch herunter. Die Mitteilung kommt zu der Einnahme, ab der der Rest erreicht ist.</div>` : ""}
     <button class="btn" data-act="save" style="margin-top:22px">Speichern</button>
     <button class="btn danger" data-act="close" style="margin-top:4px">Abbrechen</button>`);
 }
