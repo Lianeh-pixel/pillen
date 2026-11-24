@@ -139,7 +139,7 @@ create function public.pill_take()
 returns jsonb language plpgsql security definer set search_path = '' as $$
 declare items jsonb;
 begin
-  with o as (delete from public.pill_outbox returning device, payload)
+  with o as (delete from public.pill_outbox where id is not null returning device, payload)
   select coalesce(jsonb_agg(jsonb_build_object('payload', o.payload, 'sub', d.sub, 'device', d.id)), '[]'::jsonb) into items
   from o join public.pill_devices d on d.id = o.device;
   return items;

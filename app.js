@@ -7,9 +7,7 @@ const KEY = "pillen";
 const LATE = 3 * 3600e3;        // nach 3 Std. gilt eine Einnahme als vergessen
 const ONTIME = 30 * 60e3;       // pünktlich = höchstens 30 Min. nach der Uhrzeit
 // Darreichungsformen: [Mehrzahl, Einzahl, Symbol]
-const UNITS = [["Tabletten", "Tablette", "round"], ["Kapseln", "Kapsel", "round"], ["Dragees", "Dragee", "round"], ["Tropfen", "Tropfen", "drop"], ["Augentropfen", "Augentropfen", "drop"],
-  ["Sprühstöße", "Sprühstoß", "spray"], ["Hübe", "Hub", "spray"], ["ml", "ml", "drop"], ["Messlöffel", "Messlöffel", "drop"], ["Beutel", "Beutel", "round"],
-  ["Zäpfchen", "Zäpfchen", "round"], ["Pflaster", "Pflaster", "patch"], ["Spritzen", "Spritze", "syringe"], ["IE", "IE", "syringe"], ["Anwendungen", "Anwendung", "tube"], ["Stück", "Stück", "round"]];
+const UNITS = [["Tabletten", "Tablette", "round"], ["Sprühstöße", "Sprühstoß", "spray"], ["Hübe", "Hub", "spray"], ["Einheiten", "Einheit", "syringe"]];
 const unitInfo = u => UNITS.find(x => x[0] === u || x[1] === u);
 
 let S = load();
@@ -386,7 +384,7 @@ function drawEdit() {
   }[m.stockMode || "off"];
   openSheet(`<div class="hdr" style="margin:0 0 4px"><h2>${m.isNew ? "Neues Mittel" : esc(m.name) || "Mittel"}</h2>${m.isNew ? "" : `<button class="ic" data-act="del" aria-label="Löschen">${IC.trash}</button>`}</div>
     <label class="l">Name</label><input class="field" data-f="name" value="${esc(m.name)}" placeholder="z. B. Vitamin D" autocomplete="off">
-    <label class="l">Dosis</label><div class="two"><input class="field" inputmode="decimal" data-f="amount" value="${m.amount != null ? fmtNum(m.amount) : ""}">${unitInfo(m.unit) || !m.unit ? `<select class="field" data-act="unitsel">${UNITS.map(u => `<option value="${u[0]}"${unitInfo(m.unit) === u ? " selected" : ""}>${u[0]}</option>`).join("")}<option value="">Eigene …</option></select><input type="hidden" data-f="unit" value="${esc(unitInfo(m.unit) ? unitInfo(m.unit)[0] : "Tabletten")}">` : `<input class="field" data-f="unit" value="${esc(m.unit)}" placeholder="z. B. Kautabletten">`}</div>
+    <label class="l">Dosis</label><div class="two"><input class="field" inputmode="decimal" data-f="amount" value="${m.amount != null ? fmtNum(m.amount) : ""}"><select class="field" data-act="unitsel">${UNITS.map(u => `<option value="${u[0]}"${(unitInfo(m.unit) || UNITS[0]) === u ? " selected" : ""}>${u[0]}</option>`).join("")}</select><input type="hidden" data-f="unit" value="${esc((unitInfo(m.unit) || UNITS[0])[0])}"></div>
     <label class="l">Erinnerungen</label>
     <div class="chips">${(m.times || []).map((t, i) => `<button class="chip" data-act="deltime" data-i="${i}">${t}<i>×</i></button>`).join("")}<label class="chip add">+ Uhrzeit<input type="time" data-act="addtime"></label></div>
     <label class="l">Vorrat</label>
@@ -482,7 +480,7 @@ document.addEventListener("change", async e => {
       S.meds = d.meds; S.log = d.log || {}; save(); closeSheet(); render(); toast("Sicherung geladen.");
     } catch (err) { toast("Laden fehlgeschlagen: " + err.message, 6000); }
   }
-  if (el.dataset.act === "unitsel" && edit) { readEdit(); edit.unit = el.value || " "; drawEdit(); if (!el.value) { const f = document.querySelector('#sheet [data-f="unit"]'); if (f) { f.value = ""; f.focus(); } } else { const h = document.querySelector('#sheet [data-f="unit"]'); if (h) h.value = el.value; } }
+  if (el.dataset.act === "unitsel" && edit) { readEdit(); edit.unit = el.value; drawEdit(); }
 });
 document.querySelectorAll(".nav button").forEach(b => b.addEventListener("click", () => { tab = b.dataset.tab; closeSheet(); render(); scrollTo(0, 0); }));
 
