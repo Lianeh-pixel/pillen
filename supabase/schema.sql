@@ -158,6 +158,7 @@ revoke all on function public.pill_register(uuid, jsonb, text), public.pill_sync
   public.pill_snooze(uuid, timestamptz, int), public.pill_test(uuid), public.pill_queue(), public.pill_take(), public.pill_gone(uuid) from public, anon, authenticated;
 grant execute on function public.pill_register(uuid, jsonb, text), public.pill_sync(uuid, jsonb), public.pill_slot(uuid, timestamptz, text[]),
   public.pill_snooze(uuid, timestamptz, int), public.pill_test(uuid) to anon, authenticated;
+grant execute on function public.pill_take(), public.pill_gone(uuid), public.pill_queue() to service_role;
 
 -- Jede Minute: fällige Mitteilungen vorbereiten und nur dann die Versand-Funktion anstoßen
 select cron.schedule('pillen-push', '* * * * *', $$

@@ -32,6 +32,6 @@ Deno.serve(async req => {
     return json({ sent });
   } catch (e) {
     console.error(e);
-    return json({ error: String(e) }, 500);
+    return json({ error: e instanceof Error ? e.message : JSON.stringify(e) }, 500);
   }
 });

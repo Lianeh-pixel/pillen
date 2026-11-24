@@ -6,7 +6,11 @@ const PUSH_FN = CFG.supabaseUrl + "/functions/v1/pillen-push";
 const KEY = "pillen";
 const LATE = 3 * 3600e3;        // nach 3 Std. gilt eine Einnahme als vergessen
 const ONTIME = 30 * 60e3;       // pünktlich = höchstens 30 Min. nach der Uhrzeit
-const UNITS = ["Tabletten", "Tablette", "Kapseln", "Kapsel", "Tropfen", "Hübe", "Hub", "ml", "Stück", "Beutel", "IE"];
+// Darreichungsformen: [Mehrzahl, Einzahl, Symbol]
+const UNITS = [["Tabletten", "Tablette", "round"], ["Kapseln", "Kapsel", "round"], ["Dragees", "Dragee", "round"], ["Tropfen", "Tropfen", "drop"], ["Augentropfen", "Augentropfen", "drop"],
+  ["Sprühstöße", "Sprühstoß", "spray"], ["Hübe", "Hub", "spray"], ["ml", "ml", "drop"], ["Messlöffel", "Messlöffel", "drop"], ["Beutel", "Beutel", "round"],
+  ["Zäpfchen", "Zäpfchen", "round"], ["Pflaster", "Pflaster", "patch"], ["Spritzen", "Spritze", "syringe"], ["IE", "IE", "syringe"], ["Anwendungen", "Anwendung", "tube"], ["Stück", "Stück", "round"]];
+const unitInfo = u => UNITS.find(x => x[0] === u || x[1] === u);
 
 let S = load();
 let tab = "heute", hist = { mode: "woche", off: 0 };
@@ -34,12 +38,16 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": 
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
 const num = v => { const n = parseFloat(String(v).replace(",", ".")); return isFinite(n) ? n : null; };
 const fmtNum = n => (Math.round(n * 100) / 100).toLocaleString("de-DE");
-const doseText = m => (m.amount != null ? fmtNum(m.amount) + " " : "") + (m.unit || "");
-const unitFor = (m, n) => { const u = m.unit || "Stück"; if (n === 1) return u.replace(/^Tabletten$/, "Tablette").replace(/^Kapseln$/, "Kapsel").replace(/^Hübe$/, "Hub"); return u.replace(/^Tablette$/, "Tabletten").replace(/^Kapsel$/, "Kapseln").replace(/^Hub$/, "Hübe"); };
+const doseText = m => (m.amount != null ? fmtNum(m.amount) + " " : "") + unitFor(m, m.amount);
+const unitFor = (m, n) => { const u = m.unit || "Stück", i = unitInfo(u); return i ? (n === 1 ? i[1] : i[0]) : u; };
 function toast(t, ms = 3200) { const el = $("#toast"); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, ms); }
 
 const IC = {
   round: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M8 12h8"/></svg>',
+  spray: '<svg viewBox="0 0 24 24"><rect x="8" y="9" width="8" height="11" rx="2"/><path d="M10 9V6h4v3M14 6h2M18 4.5v.01M19.5 6.5v.01M18 8v.01"/></svg>',
+  patch: '<svg viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="8" rx="4"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/></svg>',
+  syringe: '<svg viewBox="0 0 24 24"><path d="M17 3l4 4M19 5l-9.5 9.5M15 4l5 5M13 7l4 4M8 12l4 4M9.5 14.5L5 19M4 20l1-1"/></svg>',
+  tube: '<svg viewBox="0 0 24 24"><path d="M8 4h8l-1 12H9z"/><path d="M10 16v2h4v-2M11 18v2h2v-2"/></svg>',
   drop: '<svg viewBox="0 0 24 24"><path d="M12 4c3 4 5.5 7 5.5 10a5.5 5.5 0 0 1-11 0C6.5 11 9 8 12 4z"/></svg>',
   check: '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
   skip: '<svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg>',
@@ -48,15 +56,15 @@ const IC = {
   back: '<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
   trash: '<svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg>'
 };
-const medIcon = m => /tropf|ml/i.test(m.unit || "") ? IC.drop : IC.round;
+const medIcon = m => IC[(unitInfo(m.unit) || [, , "round"])[2]] || IC.round;
 
 /* ---------- Termine ---------- */
 // Alle Termine eines Tages: [{key, at: Date, time, meds:[med]}]
-function slotsOf(day) {
+function slotsOf(day, all) {
   const map = new Map();
   for (const m of S.meds) for (const t of (m.times || [])) {
     const at = parseKey(slotKey(day, t));
-    if (at.getTime() < (m.created || 0) - 60e3) continue;
+    if (!all && at.getTime() < (m.created || 0) - 60e3) continue;
     const k = slotKey(day, t);
     if (!map.has(k)) map.set(k, { key: k, at, time: t, meds: [] });
     map.get(k).meds.push(m);
@@ -147,12 +155,14 @@ async function syncNow() {
   try {
     await pbRpc("pill_sync", { dev: S.device, meds });
     const now = Date.now();
-    for (const d of [addDays(new Date(), -1), new Date()]) for (const sl of slotsOf(d)) if (sl.at.getTime() <= now + 60e3 * 2 && now - sl.at < LATE) await pushSlot(sl);
+    for (const d of [addDays(new Date(), -1), new Date()]) for (const sl of slotsOf(d, true)) if (sl.at.getTime() <= now + 60e3 * 2 && now - sl.at < LATE) await pushSlot(sl);
   } catch (e) { console.warn(e); }
 }
 async function pushSlot(sl) {
   if (!S.device || !S.push) return;
-  try { await pbRpc("pill_slot", { dev: S.device, slot: sl.at.toISOString(), open: openMeds(sl).map(m => m.id) }); } catch (e) { console.warn(e); }
+  // Mittel, die es zu dem Termin noch nicht gab, gelten als erledigt
+  const open = openMeds(sl).filter(m => sl.at.getTime() >= (m.created || 0) - 60e3).map(m => m.id);
+  try { await pbRpc("pill_slot", { dev: S.device, slot: sl.at.toISOString(), open }); } catch (e) { console.warn(e); }
 }
 function b64uBytes(s) { const b = atob(s.replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from(b, c => c.charCodeAt(0)); }
 async function enablePush() {
@@ -376,8 +386,7 @@ function drawEdit() {
   }[m.stockMode || "off"];
   openSheet(`<div class="hdr" style="margin:0 0 4px"><h2>${m.isNew ? "Neues Mittel" : esc(m.name) || "Mittel"}</h2>${m.isNew ? "" : `<button class="ic" data-act="del" aria-label="Löschen">${IC.trash}</button>`}</div>
     <label class="l">Name</label><input class="field" data-f="name" value="${esc(m.name)}" placeholder="z. B. Vitamin D" autocomplete="off">
-    <label class="l">Dosis</label><div class="two"><input class="field" inputmode="decimal" data-f="amount" value="${m.amount != null ? fmtNum(m.amount) : ""}"><input class="field" data-f="unit" list="units" value="${esc(m.unit)}"></div>
-    <datalist id="units">${UNITS.map(u => `<option value="${u}">`).join("")}</datalist>
+    <label class="l">Dosis</label><div class="two"><input class="field" inputmode="decimal" data-f="amount" value="${m.amount != null ? fmtNum(m.amount) : ""}">${unitInfo(m.unit) || !m.unit ? `<select class="field" data-act="unitsel">${UNITS.map(u => `<option value="${u[0]}"${unitInfo(m.unit) === u ? " selected" : ""}>${u[0]}</option>`).join("")}<option value="">Eigene …</option></select><input type="hidden" data-f="unit" value="${esc(unitInfo(m.unit) ? unitInfo(m.unit)[0] : "Tabletten")}">` : `<input class="field" data-f="unit" value="${esc(m.unit)}" placeholder="z. B. Kautabletten">`}</div>
     <label class="l">Erinnerungen</label>
     <div class="chips">${(m.times || []).map((t, i) => `<button class="chip" data-act="deltime" data-i="${i}">${t}<i>×</i></button>`).join("")}<label class="chip add">+ Uhrzeit<input type="time" data-act="addtime"></label></div>
     <label class="l">Vorrat</label>
@@ -399,6 +408,7 @@ function saveEdit() {
   readEdit(); const m = edit;
   if (!m.name) { toast("Bitte einen Namen eingeben."); return; }
   if (m.amount == null || m.amount <= 0) m.amount = 1;
+  m.unit = (m.unit || "").trim() || "Stück";
   m.times = [...new Set(m.times)].sort();
   if (m.stockMode === "rest" && m.stock == null) toast("Tipp: Trag den Vorrat ein, damit die Restbestand-Erinnerung funktioniert.", 5000);
   const i = S.meds.findIndex(x => x.id === m.id), old = S.meds[i];
@@ -472,7 +482,7 @@ document.addEventListener("change", async e => {
       S.meds = d.meds; S.log = d.log || {}; save(); closeSheet(); render(); toast("Sicherung geladen.");
     } catch (err) { toast("Laden fehlgeschlagen: " + err.message, 6000); }
   }
-  if (el.dataset.f === "unit" && edit) { readEdit(); }
+  if (el.dataset.act === "unitsel" && edit) { readEdit(); edit.unit = el.value || " "; drawEdit(); if (!el.value) { const f = document.querySelector('#sheet [data-f="unit"]'); if (f) { f.value = ""; f.focus(); } } else { const h = document.querySelector('#sheet [data-f="unit"]'); if (h) h.value = el.value; } }
 });
 document.querySelectorAll(".nav button").forEach(b => b.addEventListener("click", () => { tab = b.dataset.tab; closeSheet(); render(); scrollTo(0, 0); }));
 
