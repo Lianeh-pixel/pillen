@@ -11,7 +11,7 @@
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: var(--bg); color: var(--text); font-family: Inter, system-ui, sans-serif; font-size: 15px; }
-body { padding: env(safe-area-inset-top) 0 calc(76px + env(safe-area-inset-bottom)); min-height: 100vh; }
+body { padding: env(safe-area-inset-top) 0 calc(64px + env(safe-area-inset-bottom)); min-height: 100vh; }
 [hidden] { display: none !important; }
 button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
 input, select { font: inherit; color: var(--text); }
@@ -112,7 +112,7 @@ label.l { display: block; font-size: 12px; color: var(--muted); margin: 16px 4px
 .d i.none { background: transparent; border: 1px dashed var(--line); }
 
 /* Unten */
-.nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-around; padding: 10px 0 calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--nav); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); z-index: 5; }
+.nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-around; padding: 8px 0 max(6px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--nav); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); z-index: 5; }
 .nav button { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); min-width: 72px; }
 .nav button.on { color: var(--acc); }
 .nav svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; }
@@ -126,4 +126,4 @@ label.l { display: block; font-size: 12px; color: var(--muted); margin: 16px 4px
 .row-set .t { font-size: 15px; } .row-set .x { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
 .row-set button.a { color: var(--acc); font-weight: 600; font-size: 14px; white-space: nowrap; }
 
-.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(92px + env(safe-area-inset-bottom)); background: var(--text); color: var(--bg); padding: 11px 18px; border-radius: 999px; font-size: 13.5px; z-index: 20; max-width: 90vw; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(76px + env(safe-area-inset-bottom)); background: var(--text); color: var(--bg); padding: 11px 18px; border-radius: 999px; font-size: 13.5px; z-index: 20; max-width: 90vw; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
