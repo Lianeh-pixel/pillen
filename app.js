@@ -389,7 +389,7 @@ function closeSheet() { $("#sheet").hidden = true; $("#sheetBack").hidden = true
 
 function openEdit(id) {
   const m = id ? S.meds.find(x => x.id === id) : null;
-  edit = m ? JSON.parse(JSON.stringify(m)) : { id: uid(), name: "", amount: 1, unit: "Tabletten", times: ["08:00"], stock: null, stockMode: "rest", stockRest: 10, stockSpan: 30, stockSpanUnit: "d", created: Date.now(), isNew: true };
+  edit = m ? JSON.parse(JSON.stringify(m)) : { id: uid(), name: "", amount: 1, unit: "Tabletten", times: [], stock: null, stockMode: "rest", stockRest: 10, stockSpan: 30, stockSpanUnit: "d", created: Date.now(), isNew: true };
   drawEdit();
 }
 function drawEdit() {
