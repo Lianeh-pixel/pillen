@@ -1,6 +1,6 @@
 {
   "appId": "de.lianeh.pillen",
-  "appName": "Pillen",
+  "appName": "MedTimer",
   "webDir": "www",
   "android": { "backgroundColor": "#25303f" },
   "plugins": {

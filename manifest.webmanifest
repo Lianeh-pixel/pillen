@@ -1,6 +1,6 @@
 {
-  "name": "Pillenerinnerung",
-  "short_name": "Pillen",
+  "name": "MedTimer",
+  "short_name": "MedTimer",
   "lang": "de",
   "start_url": "./",
   "scope": "./",

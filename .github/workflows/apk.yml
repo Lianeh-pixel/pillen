@@ -42,7 +42,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk
-          name: Pillen (Android-App)
+          name: MedTimer (Android-App)
           body: "Neueste Android-App. Herunterladen: pillen.apk antippen."
           files: pillen.apk
           make_latest: true

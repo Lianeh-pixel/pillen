@@ -41,7 +41,7 @@ async function nativePerm() { try { return (await LN.checkPermissions()).display
 async function nativeAsk() {
   let p = await nativePerm();
   if (p !== "granted") { try { p = (await LN.requestPermissions()).display; } catch (e) {} }
-  if (p !== "granted") toast("Mitteilungen sind blockiert. Bitte in den Android-Einstellungen unter Apps → Pillen erlauben.", 8000);
+  if (p !== "granted") toast("Mitteilungen sind blockiert. Bitte in den Android-Einstellungen unter Apps → MedTimer erlauben.", 8000);
   return p === "granted";
 }
 
@@ -95,7 +95,7 @@ async function nativeSchedule() {
 
 async function nativeTest() {
   if (!(await nativeAsk())) return;
-  await LN.schedule({ notifications: [{ id: 42, title: "Test: Pillenerinnerung", body: "So meldet sich die App, auch wenn sie geschlossen ist.", channelId: CHANNEL[S.sound] || CHANNEL.ton,
+  await LN.schedule({ notifications: [{ id: 42, title: "Test: MedTimer", body: "So meldet sich die App, auch wenn sie geschlossen ist.", channelId: CHANNEL[S.sound] || CHANNEL.ton,
     smallIcon: "ic_stat_pill", iconColor: "#5f8fbf", schedule: { at: new Date(Date.now() + 5000), allowWhileIdle: true } }] });
   toast("Der Test kommt in 5 Sekunden – du kannst die App dafür schließen.", 5000);
 }
@@ -103,7 +103,7 @@ async function nativeTest() {
 async function nativeExport(json, name) {
   try {
     const r = await NP.Filesystem.writeFile({ path: name, data: json, directory: "CACHE", encoding: "utf8" });
-    await NP.Share.share({ title: "Pillen-Sicherung", url: r.uri, dialogTitle: "Sicherung speichern" });
+    await NP.Share.share({ title: "MedTimer-Sicherung", url: r.uri, dialogTitle: "Sicherung speichern" });
   } catch (e) { if (!/cancel/i.test(e.message || "")) toast("Speichern fehlgeschlagen: " + (e.message || e), 6000); }
 }
 

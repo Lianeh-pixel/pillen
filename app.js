@@ -573,7 +573,7 @@ document.addEventListener("click", async e => {
   else if (a === "push") { if (await enablePush()) { toast("Mitteilungen sind eingeschaltet."); openSettings(); } }
   else if (a === "testpush") { try { await pbRpc("pill_test", { dev: S.device }); toast("Test kommt innerhalb einer Minute – du kannst die App dafür schließen.", 5000); } catch (err) { toast("Test fehlgeschlagen: " + err.message, 8000); } }
   else if (a === "export") {
-    const json = JSON.stringify({ app: "pillen", version: 1, saved: new Date().toISOString(), meds: S.meds, log: S.log }, null, 1), name = "pillen-sicherung-" + dkey(new Date()) + ".json";
+    const json = JSON.stringify({ app: "pillen", version: 1, saved: new Date().toISOString(), meds: S.meds, log: S.log }, null, 1), name = "medtimer-sicherung-" + dkey(new Date()) + ".json";
     if (NATIVE) { nativeExport(json, name); return; }
     const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob), x = document.createElement("a"); x.href = url; x.download = name; x.click(); setTimeout(() => URL.revokeObjectURL(url), 2000);
@@ -583,7 +583,7 @@ document.addEventListener("change", async e => {
   const el = e.target;
   if (el.dataset.act === "addtime" && el.value) { readEdit(); if (!edit.times.includes(el.value)) edit.times.push(el.value); edit.times.sort(); drawEdit(); }
   if (el.dataset.act === "import" && el.files[0]) {
-    try { const d = JSON.parse(await el.files[0].text()); if (d.app !== "pillen" || !Array.isArray(d.meds)) throw new Error("Keine Pillen-Sicherung");
+    try { const d = JSON.parse(await el.files[0].text()); if (d.app !== "pillen" || !Array.isArray(d.meds)) throw new Error("Keine MedTimer-Sicherung");
       if (!confirm("Sicherung vom " + new Date(d.saved).toLocaleDateString("de-DE") + " laden? Die Daten auf diesem Gerät werden ersetzt.")) return;
       S.meds = d.meds; S.log = d.log || {}; save(); closeSheet(); render(); toast("Sicherung geladen.");
     } catch (err) { toast("Laden fehlgeschlagen: " + err.message, 6000); }
