@@ -603,3 +603,23 @@ else if ("serviceWorker" in navigator) {
 }
 if (!NATIVE) { fixSound(); readInbox(); checkPush(); pbSet("sound", S.sound).catch(() => {}); }
 document.addEventListener("visibilitychange", () => { if (!document.hidden) { if (!NATIVE) readInbox(); render(); queueSync(); } });
+
+// Maske nach unten wegschieben zum Schließen
+(() => {
+  const s = $("#sheet"); let y0 = null, dy = 0, t0 = 0, drag = false;
+  s.addEventListener("touchstart", e => { if (s.scrollTop > 0 || e.touches.length > 1) { y0 = null; return; } y0 = e.touches[0].clientY; dy = 0; t0 = Date.now(); drag = false; }, { passive: true });
+  s.addEventListener("touchmove", e => {
+    if (y0 == null) return;
+    dy = e.touches[0].clientY - y0;
+    if (!drag) { if (dy > 8 && s.scrollTop <= 0) { drag = true; s.style.transition = "none"; if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } else if (dy < 0) { y0 = null; return; } else return; }
+    e.preventDefault(); s.style.transform = `translateY(${Math.max(0, dy)}px)`;
+  }, { passive: false });
+  const end = () => {
+    if (y0 == null) return; y0 = null; if (!drag) return; drag = false;
+    const fast = dy > 60 && dy / (Date.now() - t0) > 0.5;
+    s.style.transition = "transform .22s ease";
+    if (dy > 120 || fast) { s.style.transform = "translateY(100%)"; setTimeout(() => { closeSheet(); s.style.transition = ""; s.style.transform = ""; }, 220); }
+    else { s.style.transform = ""; setTimeout(() => { s.style.transition = ""; }, 220); }
+  };
+  s.addEventListener("touchend", end); s.addEventListener("touchcancel", end);
+})();

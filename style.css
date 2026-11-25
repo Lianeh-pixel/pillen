@@ -168,7 +168,7 @@ label.l { display: block; font-size: 12px; color: var(--muted); margin: 16px 4px
 .nav button.on:before { content: ""; position: absolute; top: -9px; left: 14px; right: 14px; height: 3px; border-radius: 0 0 3px 3px; background: var(--acc); }
 
 .sheet-back { position: fixed; inset: 0; background: rgba(10,15,22,.45); z-index: 10; }
-.sheet { position: fixed; left: 0; right: 0; bottom: 0; max-height: 92vh; overflow: auto; background: var(--bg); border-radius: 26px 26px 0 0; z-index: 11; padding: 10px 20px calc(24px + env(safe-area-inset-bottom)); max-width: 560px; margin: 0 auto; }
+.sheet { overscroll-behavior: contain; position: fixed; left: 0; right: 0; bottom: 0; max-height: 92vh; overflow: auto; background: var(--bg); border-radius: 26px 26px 0 0; z-index: 11; padding: 10px 20px calc(24px + env(safe-area-inset-bottom)); max-width: 560px; margin: 0 auto; }
 .sheet .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 10px; }
 .sheet h2 { font-weight: 600; font-size: 24px; letter-spacing: -.02em; margin: 6px 0 4px; }
 .row-set { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px; }
