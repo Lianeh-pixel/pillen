@@ -438,16 +438,15 @@ function openEdit(id) {
 function drawEdit() {
   const m = edit, u = esc(m.unit || "Stück"), sm = m.stockMode || "off";
   const sel = (v, opts) => opts.map(([k, t]) => `<option value="${k}"${v === k ? " selected" : ""}>${t}</option>`).join("");
-  const extra = sm === "rest" ? `<div class="er"><span class="k">bei</span><div class="v"><input class="ein" inputmode="decimal" data-f="stockRest" value="${m.stockRest ?? ""}"><span>${u}</span></div></div>`
-    : sm === "span" ? `<div class="er"><span class="k">nach</span><div class="v"><input class="ein" inputmode="numeric" data-f="stockSpan" value="${m.stockSpan ?? ""}"><select class="esel" data-f="stockSpanUnit">${sel(m.stockSpanUnit || "d", [["d", "Tagen"], ["w", "Wochen"], ["m", "Monaten"]])}</select></div></div>` : "";
+  const extra = sm === "rest" ? `<input class="ein" inputmode="decimal" data-f="stockRest" value="${m.stockRest ?? ""}"><span>${u}</span>`
+    : sm === "span" ? `<input class="ein" inputmode="numeric" data-f="stockSpan" value="${m.stockSpan ?? ""}"><select class="esel" data-f="stockSpanUnit">${sel(m.stockSpanUnit || "d", [["d", "Tagen"], ["w", "Wochen"], ["m", "Monaten"]])}</select>` : "";
   openSheet(`${m.isNew ? `<h2 style="margin:6px 0 8px">Neues Medikament</h2>` : ""}<div class="nrow"><input class="ename" data-f="name" value="${esc(m.name)}" placeholder="Name" autocomplete="off">${m.isNew ? "" : `<button class="ic" data-act="del" aria-label="Löschen">${IC.trash}</button>`}</div>
     <div class="er"><span class="k">Dosis</span><div class="v"><div class="stp"><button data-act="dose" data-d="-1" aria-label="Weniger">−</button><input inputmode="decimal" data-f="amount" value="${m.amount != null ? fmtNum(m.amount) : ""}"><button data-act="dose" data-d="1" aria-label="Mehr">+</button></div><select class="esel acc" data-act="unitsel">${UNITS.map(x => `<option value="${x[0]}"${(unitInfo(m.unit) || UNITS[0]) === x ? " selected" : ""}>${x[0]}</option>`).join("")}</select><input type="hidden" data-f="unit" value="${esc((unitInfo(m.unit) || UNITS[0])[0])}"></div></div>
     <div class="lbl">Uhrzeiten</div>
     <div class="tch">${(m.times || []).map((t, i) => `<span class="tcp${isAuto(m, t) ? " a" : ""}"><button data-act="ttog" data-i="${i}">${isAuto(m, t) ? IC.auto : IC.bell}${t}</button><button class="x" data-act="deltime" data-i="${i}" aria-label="Entfernen">×</button></span>`).join("")}<label class="tcp p">+ Uhrzeit<input type="time" data-act="addtime"></label></div>
     <div class="lbl">Vorrat</div>
     <div class="er"><span class="k">Bestand</span><div class="v"><input class="ein" inputmode="decimal" data-f="stock" value="${m.stock != null ? fmtNum(m.stock) : ""}" placeholder="–"><span>${u}</span></div></div>
-    <div class="er"><span class="k">Warnen</span><div class="v"><select class="esel acc" data-act="smodesel">${sel(sm, [["off", "Aus"], ["rest", "bei Restbestand"], ["span", "nach Zeitspanne"]])}</select></div></div>
-    ${extra}
+    <div class="er"><span class="k">Warnen</span><div class="v"><select class="esel acc" data-act="smodesel">${sel(sm, [["off", "Aus"], ["rest", "bei"], ["span", "nach"]])}</select>${extra}</div></div>
     <button class="btn" data-act="save" style="margin-top:24px">Speichern</button>`);
 }
 function readEdit() {
