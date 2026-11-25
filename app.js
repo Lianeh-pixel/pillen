@@ -161,7 +161,7 @@ function stockText(m) {
 }
 const stockDue = m => { const a = stockAlertAt(m); return a && a.getTime() <= Date.now() && !m.stockOk; };
 function refill(m, n) {
-  m.stock = (m.stock || 0) + n; m.stockSince = dkey(new Date()); m.lowSince = null; m.stockOk = false;
+  m.stock = (m.stock || 0) + n; m.stockFull = m.stock; m.stockSince = dkey(new Date()); m.lowSince = null; m.stockOk = false;
   if (m.stockMode === "date") m.stockDate = null;
   updateLow(m); save(); render(); toast(m.name + ": jetzt " + fmtNum(m.stock) + " " + unitFor(m, m.stock));
 }
@@ -318,11 +318,14 @@ function viewMeds() {
   let h = header("Mittel", S.meds.length ? S.meds.length + (S.meds.length === 1 ? " Mittel" : " Mittel") : "", `<button class="ic acc" data-act="new" aria-label="Neues Mittel">${IC.plus}</button>`);
   if (!S.meds.length) return h + `<div class="empty">Noch keine Mittel angelegt.<button class="btn" data-act="new">${IC.plus}Mittel anlegen</button></div>`;
   h += stockAlerts();
-  h += `<div class="card">` + S.meds.slice().sort((a, b) => a.name.localeCompare(b.name, "de")).map(m => {
-    const d = stockDays(m);
-    const st = m.stock != null ? `noch ${fmtNum(m.stock)} ${unitFor(m, m.stock)}${d != null ? " · reicht bis " + fmtShort(addDays(new Date(), d)) : ""}` : "";
-    return `<button class="item" data-act="edit" data-id="${m.id}"><div class="pill">${medIcon(m)}</div><div class="grow"><div class="nm">${esc(m.name)}</div><div class="ds">${esc(doseText(m))}${(m.times || []).length ? " · " + m.times.join(", ") : ""}</div>${st ? `<div class="ds">${esc(st)}</div>` : ""}</div></button>`;
-  }).join("") + `</div>`;
+  h += S.meds.slice().sort((a, b) => a.name.localeCompare(b.name, "de")).map(m => {
+    const d = stockDays(m), has = m.stock != null;
+    const frac = has ? (m.stockFull ? m.stock / Math.max(m.stock, m.stockFull) : Math.min(1, (d ?? 0) / 90)) : 0;
+    const low = has && (m.lowSince || (d != null && d < 14));
+    return `<button class="mc" data-act="edit" data-id="${m.id}"><div class="top"><div class="pill">${medIcon(m)}</div><div class="grow"><div class="nm">${esc(m.name)}</div><div class="ds">${esc(doseText(m))}</div></div>${has ? `<div class="stn"><div class="n${low ? " warn" : ""}">${fmtNum(m.stock)}</div><div class="u">${esc(unitFor(m, m.stock))}</div></div>` : ""}</div>
+      ${(m.times || []).length ? `<div class="tchips">${m.times.map(t => `<span class="tc${isAuto(m, t) ? " auto" : ""}">${t}</span>`).join("")}</div>` : ""}
+      ${has ? `<div class="sbar"><i style="width:${Math.max(2, Math.round(frac * 100))}%${low ? ";background:var(--warn)" : ""}"></i></div>${d != null ? `<div class="bl">reicht bis ${fmtShort(addDays(new Date(), d))}</div>` : ""}` : ""}</button>`;
+  }).join("");
   return h;
 }
 
@@ -438,7 +441,7 @@ function saveEdit() {
   if (m.stockMode === "rest" && m.stock == null) toast("Tipp: Trag den Vorrat ein, damit die Restbestand-Erinnerung funktioniert.", 5000);
   const i = S.meds.findIndex(x => x.id === m.id), old = S.meds[i];
   delete m.isNew;
-  if (old && (old.stock !== m.stock)) { m.stockSince = dkey(new Date()); m.lowSince = null; }
+  if (!old || old.stock !== m.stock) { m.stockSince = dkey(new Date()); m.lowSince = null; m.stockFull = m.stock; }
   if (old && (old.stockMode !== m.stockMode || old.stockDate !== m.stockDate || old.stockSpan !== m.stockSpan || old.stockRest !== m.stockRest)) m.stockOk = false;
   if (!old) m.stockSince = dkey(new Date());
   updateLow(m);
