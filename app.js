@@ -385,7 +385,7 @@ function viewHistory() {
   let pre = "";
   if (hist.mode === "monat") { const wd = (from.getDay() + 6) % 7; for (let i = 0; i < wd; i++) pre += `<div class="d"></div>`; }
   const past = days.filter(x => x.d <= today), selKey = past.some(x => dkey(x.d) === hist.day) ? hist.day : past.length ? dkey(past[past.length - 1].d) : null;
-  h += `<div class="dots ${cls}">${pre}${days.map(({ d, st }) => {
+  if (hist.mode === "woche" || hist.mode === "monat") h += `<div class="dots ${cls}">${pre}${days.map(({ d, st }) => {
     let bg = "";
     if (st && st.total) { const f = st.taken / st.total; bg = f >= 1 ? "background:var(--acc)" : f > 0 ? `background:conic-gradient(var(--acc) 0 ${Math.round(f * 100)}%,var(--track) ${Math.round(f * 100)}% 100%)` : ""; }
     const isToday = dkey(d) === dkey(today);
