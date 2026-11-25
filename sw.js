@@ -1,6 +1,6 @@
 /* Offline-Unterstützung und Push-Mitteilungen der Pillenerinnerung. */
 importScripts("config.js", "shared.js");
-const VERSION = "pb-v23";
+const VERSION = "pb-v24";
 const SHELL = ["./", "index.html", "style.css", "app.js", "native.js", "shared.js", "config.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/badge.png", "icons/icon.svg", "fonts/inter-latin.woff2"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(k => Promise.all(k.filter(x => x !== VERSION).map(x => caches.delete(x)))).then(() => self.clients.claim())); });

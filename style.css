@@ -196,3 +196,6 @@ label.l { display: block; font-size: 12px; color: var(--muted); margin: 16px 4px
 .pm .t i { display: block; height: 100%; background: var(--acc); border-radius: 3px; }
 .pm .f { font-size: 12.5px; color: var(--muted); }
 .pm .f b { color: var(--warn); font-weight: 500; }
+.chk.sm { width: 22px; height: 22px; margin-left: 0; }
+.dr .dot, .dr .chk { position: relative; }
+.dr .dot:after, .dr .chk:after { content: ""; position: absolute; inset: -12px; }

@@ -293,7 +293,8 @@ function viewToday() {
           return `<div class="mr" data-act="edit" data-id="${m.id}"><div class="pill">${medIcon(m)}</div><div class="grow"><div class="nm">${esc(m.name)}</div><div class="ds">${esc(doseText(m))}</div></div>${tomorrow ? "" : `<button class="chk" data-act="tick" data-slot="${sl.key}" data-id="${m.id}" aria-label="Eingenommen"></button>`}</div>`;
         }
         const sub = st === "taken" ? (e.auto ? "automatisch" : hm(new Date(e.at))) : st === "skipped" ? "ausgelassen" : "vergessen";
-        return `<button class="dr" data-act="hitem" data-slot="${sl.key}" data-id="${m.id}"><span class="nms">${esc(m.name)} · ${esc(doseText(m))}</span><span class="${st === "missed" ? "st-miss" : ""}">${sub}</span>${st === "taken" ? `<span class="dot">${IC.check}</span>` : st === "skipped" ? `<span class="dot skip">${IC.skip}</span>` : ""}</button>`;
+        const da = `data-slot="${sl.key}" data-id="${m.id}"`;
+        return `<div class="dr"><span class="nms">${esc(m.name)} · ${esc(doseText(m))}</span><span class="${st === "missed" ? "st-miss" : ""}">${sub}</span>${st === "taken" ? `<button class="dot" data-act="untick" ${da} aria-label="Rückgängig">${IC.check}</button>` : st === "skipped" ? `<button class="dot skip" data-act="untick" ${da} aria-label="Rückgängig">${IC.skip}</button>` : `<button class="chk sm" data-act="tick" ${da} aria-label="Eingenommen"></button>`}</div>`;
       }).join("");
       return `<div class="tli"><span class="tln${allDone ? " done" : ""}"></span><div class="tlh"><b class="${allDone || tomorrow ? "muted" : ""}">${sl.time}</b><span>${right}</span></div>
         <div class="grp">${body}${open.length > 1 ? `<button class="gbtn" data-act="takeall" data-slot="${sl.key}">Alle eingenommen</button>` : ""}</div></div>`;
@@ -508,12 +509,14 @@ function saveEntry() {
   updateLow(m); save(); pushSlot(sl); hEdit = null; closeSheet(); render();
 }
 
-function undoEntry() {
-  const sl = slotByKey(hEdit.key), m = S.meds.find(x => x.id === hEdit.id), k = hEdit.key + "|" + m.id, old = S.log[k];
+function undoDose(key, id) {
+  const sl = slotByKey(key), m = S.meds.find(x => x.id === id); if (!sl || !m) return;
+  const k = key + "|" + m.id, old = S.log[k];
   if (old && old.s === "taken" && m.stock != null) m.stock += m.amount || 1;
   if (isAuto(m, sl.time)) S.log[k] = { s: "open", at: Date.now() }; else delete S.log[k];
-  updateLow(m); save(); pushSlot(sl); hEdit = null; closeSheet(); render(); toast("Zurückgenommen");
+  updateLow(m); save(); pushSlot(sl);
 }
+function undoEntry() { undoDose(hEdit.key, hEdit.id); hEdit = null; closeSheet(); render(); toast("Zurückgenommen"); }
 
 async function openSettings() {
   const perm = NATIVE ? await nativePerm() : "Notification" in window ? Notification.permission : "denied";
@@ -555,7 +558,7 @@ document.addEventListener("click", async e => {
   else if (a === "take" || a === "skip") { b.dataset.slot.split(",").map(slotByKey).filter(Boolean).forEach(sl => mark(sl, openMeds(sl).filter(m => stateOf(sl, m) === "due"), a === "take" ? "taken" : "skipped")); render(); if (a === "take") toast("Gut gemacht ✓"); }
   else if (a === "snooze") { b.dataset.slot.split(",").map(slotByKey).filter(Boolean).forEach(sl => snooze(sl, 15)); render(); }
   else if (a === "tick") { const sl = slotByKey(b.dataset.slot), m = S.meds.find(x => x.id === b.dataset.id); if (sl && m) { mark(sl, [m], "taken"); render(); } }
-  else if (a === "untick") { const sl = slotByKey(b.dataset.slot), m = S.meds.find(x => x.id === b.dataset.id); if (sl && m) { const e = entry(sl.key, m); if (e && e.auto && e.s === "taken") mark(sl, [m], "skipped"); else unmark(sl, m); render(); } }
+  else if (a === "untick") { undoDose(b.dataset.slot, b.dataset.id); render(); }
   else if (a === "refill") {
     const m = S.meds.find(x => x.id === b.dataset.id); if (!m) return;
     if (m.stock == null && m.stockMode !== "rest") { m.stockOk = true; m.stockSince = dkey(new Date()); if (m.stockMode === "date") m.stockDate = null; save(); render(); toast("Erledigt. Die Zeitspanne zählt ab heute neu."); return; }
