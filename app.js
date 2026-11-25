@@ -389,11 +389,11 @@ function viewHistory() {
     let bg = "";
     if (st && st.total) { const f = st.taken / st.total; bg = f >= 1 ? "background:var(--acc)" : f > 0 ? `background:conic-gradient(var(--acc) 0 ${Math.round(f * 100)}%,var(--track) ${Math.round(f * 100)}% 100%)` : ""; }
     const isToday = dkey(d) === dkey(today);
-    const sel = dkey(d) === selKey, fut = d > today;
+    const tap = hist.mode === "woche" || hist.mode === "monat", sel = tap && dkey(d) === selKey, fut = d > today || !tap;
     return `<${fut ? "div" : `button data-act="hday" data-k="${dkey(d)}"`} class="d${sel ? " sel" : ""}"><i class="${!st || !st.total ? "none" : ""} ${isToday ? "today" : ""}" style="${bg}"></i>${hist.mode === "woche" ? WD[d.getDay()] : hist.mode === "monat" ? d.getDate() : ""}</${fut ? "div" : "button"}>`;
   }).join("")}</div>`;
   // Einträge des gewählten Tags
-  const sd = days.find(x => dkey(x.d) === selKey);
+  const sd = (hist.mode === "woche" || hist.mode === "monat") && days.find(x => dkey(x.d) === selKey);
   if (sd) {
     const d = sd.d, items = (sd.st && sd.st.items) || [];
     const dd = dkey(d) === dkey(today) ? "Heute" : dkey(d) === dkey(addDays(today, -1)) ? "Gestern · " + d.toLocaleDateString("de-DE", { weekday: "long" }) : d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
