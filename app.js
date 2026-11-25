@@ -288,9 +288,8 @@ function viewToday() {
   slotsOf(now).forEach(sl => sl.meds.forEach(m => { const e = entry(sl.key, m); if (e) done.push({ sl, m, e }); else if (stateOf(sl, m) === "missed") done.push({ sl, m, e: { s: "missed" } }); }));
   if (done.length) {
     h += `<div class="lbl grey">Heute erledigt</div><div class="card">` + done.map(({ sl, m, e }) =>
-      `<div class="item done"><span class="tm">${sl.time}</span><div class="grow"><div class="nm">${esc(m.name)}</div><div class="ds">${e.s === "taken" && e.auto ? "automatisch · " + esc(doseText(m)) + " abgezogen" : e.s === "taken" ? "eingenommen um " + hm(new Date(e.at)) : e.s === "skipped" ? "ausgelassen" : "vergessen"}</div></div>` +
-      (e.s === "missed" ? `<button class="chk" data-act="tick" data-slot="${sl.key}" data-id="${m.id}" aria-label="Doch eingenommen"></button>` :
-       `<button class="chk ${e.s === "taken" ? "on" : "skip"}" data-act="untick" data-slot="${sl.key}" data-id="${m.id}" aria-label="Rückgängig">${e.s === "taken" ? IC.check : IC.skip}</button>`) + `</div>`).join("") + `</div>`;
+      `<button class="item done" data-act="hitem" data-slot="${sl.key}" data-id="${m.id}"><span class="tm">${sl.time}</span><div class="grow"><div class="nm">${esc(m.name)}</div><div class="ds">${e.s === "taken" && e.auto ? "automatisch · " + esc(doseText(m)) + " abgezogen" : e.s === "taken" ? "eingenommen um " + hm(new Date(e.at)) : e.s === "skipped" ? "ausgelassen" : "vergessen"}</div></div>` +
+      `<span class="chk ${e.s === "taken" ? "on" : e.s === "skipped" ? "skip" : ""}">${e.s === "taken" ? IC.check : e.s === "skipped" ? IC.skip : ""}</span></button>`).join("") + `</div>`;
   }
   return h;
 }
