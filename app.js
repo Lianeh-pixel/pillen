@@ -486,9 +486,11 @@ function openEntry(key, id) {
 function drawEntry() {
   const sl = slotByKey(hEdit.key), m = S.meds.find(x => x.id === hEdit.id);
   openSheet(`<h2>${esc(m.name)}</h2><div class="sub">${fmtDay(sl.at)} · ${sl.time} Uhr · ${esc(doseText(m))}</div>
-    <div style="margin-top:10px">${[["taken", "Eingenommen"], ["skipped", "Ausgelassen"], ["missed", "Vergessen"]].map(([k, t]) => `<div class="er sr${hEdit.s === k ? " on" : ""}" data-act="hstate" data-m="${k}"><span class="rd"></span><span class="k">${t}</span>${k === "taken" && hEdit.s === "taken" ? `<div class="v"><input class="ein tm" type="time" data-act="htime" value="${hEdit.time}"><span>Uhr</span></div>` : ""}</div>`).join("")}</div>
-    <button class="btn" data-act="hsave" style="margin-top:24px">Speichern</button>
-    ${entry(hEdit.key, m) ? `<button class="tlink" data-act="hundo">Einnahme zurücknehmen</button>` : ""}`);
+    <div class="seg" style="margin-top:18px">${[["taken", "Eingenommen"], ["skipped", "Ausgelassen"], ["missed", "Vergessen"]].map(([k, t]) => `<button data-act="hstate" data-m="${k}" class="${hEdit.s === k ? "on" : ""}">${t}</button>`).join("")}</div>
+    ${hEdit.s === "taken" ? `<label class="l">Eingenommen um</label><input class="field" type="time" data-act="htime" value="${hEdit.time}">` : ""}
+    <button class="btn" data-act="hsave" style="margin-top:22px">Speichern</button>
+    ${entry(hEdit.key, m) ? `<button class="btn ghost" data-act="hundo" style="margin-top:10px">Einnahme zurücknehmen</button>` : ""}
+    `);
 }
 function saveEntry() {
   const sl = slotByKey(hEdit.key), m = S.meds.find(x => x.id === hEdit.id), k = hEdit.key + "|" + m.id, old = S.log[k];
