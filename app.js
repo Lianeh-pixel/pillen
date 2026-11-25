@@ -71,7 +71,7 @@ function slotsOf(day, all) {
   }
   return [...map.values()].sort((a, b) => a.at - b.at);
 }
-const entry = (k, m) => S.log[k + "|" + m.id];
+const entry = (k, m) => { const e = S.log[k + "|" + m.id]; return e && e.s !== "open" ? e : undefined; };   // "open" = zurückgenommen
 function stateOf(slot, m, now = Date.now()) {
   const e = entry(slot.key, m);
   if (e) return e.s;
@@ -92,7 +92,7 @@ function autoTake() {
     delete S.log[k]; ch = true;
   }
   for (let i = -14; i <= 0; i++) for (const sl of slotsOf(addDays(new Date(), i))) for (const m of sl.meds) {
-    if (!isAuto(m, sl.time) || sl.at > now || sl.at < m.auto[sl.time] || entry(sl.key, m)) continue;
+    if (!isAuto(m, sl.time) || sl.at > now || sl.at < m.auto[sl.time] || S.log[sl.key + "|" + m.id]) continue;
     S.log[sl.key + "|" + m.id] = { s: "taken", at: sl.at.getTime(), auto: true };
     if (m.stock != null) m.stock = Math.max(0, m.stock - (m.amount || 1));
     updateLow(m); ch = true;
@@ -462,6 +462,7 @@ function drawEntry() {
     <div class="seg" style="margin-top:18px">${[["taken", "Eingenommen"], ["skipped", "Ausgelassen"], ["missed", "Vergessen"]].map(([k, t]) => `<button data-act="hstate" data-m="${k}" class="${hEdit.s === k ? "on" : ""}">${t}</button>`).join("")}</div>
     ${hEdit.s === "taken" ? `<label class="l">Eingenommen um</label><input class="field" type="time" data-act="htime" value="${hEdit.time}">` : ""}
     <button class="btn" data-act="hsave" style="margin-top:22px">Speichern</button>
+    ${entry(hEdit.key, m) ? `<button class="btn ghost" data-act="hundo" style="margin-top:10px">Einnahme zurücknehmen</button>` : ""}
     <button class="btn danger" data-act="close" style="margin-top:4px">Abbrechen</button>`);
 }
 function saveEntry() {
@@ -474,6 +475,13 @@ function saveEntry() {
   } else if (hEdit.s === "skipped" || isAuto(m, sl.time)) S.log[k] = { s: "skipped", at: Date.now(), ...(isAuto(m, sl.time) ? { auto: true } : {}) };
   else delete S.log[k];
   updateLow(m); save(); pushSlot(sl); hEdit = null; closeSheet(); render();
+}
+
+function undoEntry() {
+  const sl = slotByKey(hEdit.key), m = S.meds.find(x => x.id === hEdit.id), k = hEdit.key + "|" + m.id, old = S.log[k];
+  if (old && old.s === "taken" && m.stock != null) m.stock += m.amount || 1;
+  if (isAuto(m, sl.time)) S.log[k] = { s: "open", at: Date.now() }; else delete S.log[k];
+  updateLow(m); save(); pushSlot(sl); hEdit = null; closeSheet(); render(); toast("Zurückgenommen");
 }
 
 async function openSettings() {
@@ -507,6 +515,7 @@ document.addEventListener("click", async e => {
   else if (a === "del") { if (confirm(edit.name + " wirklich löschen? Der Verlauf dieses Mittels wird ausgeblendet.")) { S.meds = S.meds.filter(x => x.id !== edit.id); save(); closeSheet(); render(); } }
   else if (a === "hitem") openEntry(b.dataset.slot, b.dataset.id);
   else if (a === "hstate") { const t = $("#sheet [data-act=htime]"); if (t) hEdit.time = t.value || hEdit.time; hEdit.s = b.dataset.m; drawEntry(); }
+  else if (a === "hundo") undoEntry();
   else if (a === "hsave") { const t = $("#sheet [data-act=htime]"); if (t && t.value) hEdit.time = t.value; saveEntry(); }
   else if (a === "tmode") { readEdit(); const t = edit.times[+b.dataset.i]; edit.auto = edit.auto || {}; if (b.dataset.m) { if (!edit.auto[t]) edit.auto[t] = Date.now(); } else delete edit.auto[t]; drawEdit(); }
   else if (a === "deltime") { readEdit(); edit.times.splice(+b.dataset.i, 1); drawEdit(); }
