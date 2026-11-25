@@ -9,14 +9,14 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MedTimer">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon.svg?i=2" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-maskable-512.png">
 <script>
   // Darstellung vor dem ersten Zeichnen setzen (kein Aufblitzen)
   try { const t = JSON.parse(localStorage.getItem("pillen") || "{}").theme || "auto";
     document.documentElement.dataset.theme = t === "auto" ? (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark") : t; } catch (e) { document.documentElement.dataset.theme = "dark"; }
 </script>
-<link rel="stylesheet" href="style.css?v=37">
+<link rel="stylesheet" href="style.css?v=38">
 </head>
 <body>
 <main id="app"></main>
@@ -28,9 +28,9 @@
 <div class="sheet-back" id="sheetBack" hidden></div>
 <div class="sheet" id="sheet" hidden></div>
 <div class="toast" id="toast" hidden></div>
-<script src="config.js?v=37"></script>
-<script src="shared.js?v=37"></script>
-<script src="native.js?v=37"></script>
-<script src="app.js?v=37"></script>
+<script src="config.js?v=38"></script>
+<script src="shared.js?v=38"></script>
+<script src="native.js?v=38"></script>
+<script src="app.js?v=38"></script>
 </body>
 </html>
