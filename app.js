@@ -452,7 +452,7 @@ function drawEdit() {
     <div class="seg">${[["off", "Aus"], ["rest", "Restbestand"], ["span", "Zeitspanne"]].map(([k, t]) => `<button data-act="smode" data-m="${k}" class="${(m.stockMode || "off") === k ? "on" : ""}">${t}</button>`).join("")}</div>
     ${modeField}
     <button class="btn" data-act="save" style="margin-top:22px">Speichern</button>
-    <button class="btn danger" data-act="close" style="margin-top:4px">Abbrechen</button>`);
+    `);
 }
 function readEdit() {
   document.querySelectorAll("#sheet [data-f]").forEach(el => {
@@ -495,7 +495,7 @@ function drawEntry() {
     ${hEdit.s === "taken" ? `<label class="l">Eingenommen um</label><input class="field" type="time" data-act="htime" value="${hEdit.time}">` : ""}
     <button class="btn" data-act="hsave" style="margin-top:22px">Speichern</button>
     ${entry(hEdit.key, m) ? `<button class="btn ghost" data-act="hundo" style="margin-top:10px">Einnahme zurücknehmen</button>` : ""}
-    <button class="btn danger" data-act="close" style="margin-top:4px">Abbrechen</button>`);
+    `);
 }
 function saveEntry() {
   const sl = slotByKey(hEdit.key), m = S.meds.find(x => x.id === hEdit.id), k = hEdit.key + "|" + m.id, old = S.log[k];
@@ -532,7 +532,7 @@ async function openSettings() {
     <div class="lbl">Daten</div>
     <div class="card"><div class="row-set"><div><div class="t">Sicherung speichern</div><div class="x">Alle Medikamente und der Verlauf als Datei</div></div><button class="a" data-act="export">Speichern</button></div>
     <div class="row-set"><div><div class="t">Sicherung laden</div><div class="x">Ersetzt die Daten auf diesem Gerät</div></div><label class="a" style="color:var(--acc);font-weight:600;font-size:14px">Laden<input type="file" accept="${NATIVE ? "" : "application/json,.json"}" data-act="import" hidden></label></div></div>
-    <button class="btn ghost" data-act="close" style="margin-top:22px">Fertig</button>`);
+    `);
 }
 
 /* ---------- Klicks ---------- */
