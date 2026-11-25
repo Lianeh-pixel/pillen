@@ -271,7 +271,7 @@ function viewToday() {
     const sz = Math.max(0, ...due.map(x => S.snooze[x.key] || 0));
     const rows = []; due.forEach(x => openMeds(x).filter(m => stateOf(x, m) === "due").forEach(m => rows.push({ x, m })));
     h += `<div class="ringwrap" id="ring" data-at="${sl.at.getTime()}">${ringSvg(0)}<div class="ringtxt"><div class="s">Einnahme überfällig seit</div><div class="big" id="clock">0:00:00</div><div class="w">${dayWord(sl.at)} um ${sl.time} Uhr</div></div></div>`;
-    h += `<div class="card due">${rows.map(({ x, m }) => `<div class="inl" data-act="edit" data-id="${m.id}" style="gap:12px;margin-bottom:8px;cursor:pointer"><div class="pill">${medIcon(m)}</div><div class="grow"><div class="nm">${esc(m.name)}</div><div class="ds">${esc(doseText(m))} · ${x.time}${m.stock != null ? " · noch " + fmtNum(m.stock) + " im Vorrat" : ""}</div></div></div>`).join("")}
+    h += `<div class="card due">${rows.map(({ x, m }) => `<div class="inl" data-act="hitem" data-slot="${x.key}" data-id="${m.id}" style="gap:12px;margin-bottom:8px;cursor:pointer"><div class="pill">${medIcon(m)}</div><div class="grow"><div class="nm">${esc(m.name)}</div><div class="ds">${esc(doseText(m))} · ${x.time}${m.stock != null ? " · noch " + fmtNum(m.stock) + " im Vorrat" : ""}</div></div></div>`).join("")}
       <button class="btn" data-act="take" data-slot="${keys}">${IC.check}Jetzt einnehmen</button>
       <div class="links"><button data-act="skip" data-slot="${keys}">✕ Auslassen</button><button data-act="snooze" data-slot="${keys}">↻ ${sz > Date.now() ? "Erinnert um " + hm(new Date(sz)) : "Verschieben"}</button></div></div>`;
   }
@@ -291,8 +291,8 @@ function viewToday() {
       const body = rows.map(m => {
         const e = entry(sl.key, m), st = tomorrow ? "upcoming" : stateOf(sl, m);
         if (st === "upcoming" || st === "due") {
-          if (isAuto(m, sl.time)) return `<div class="dr" data-act="edit" data-id="${m.id}"><span class="nms">${esc(m.name)} · ${esc(doseText(m))}</span><span>automatisch</span></div>`;
-          return `<div class="mr" data-act="edit" data-id="${m.id}"><div class="pill">${medIcon(m)}</div><div class="grow"><div class="nm">${esc(m.name)}</div><div class="ds">${esc(doseText(m))}</div></div>${tomorrow ? "" : `<button class="chk" data-act="tick" data-slot="${sl.key}" data-id="${m.id}" aria-label="Eingenommen"></button>`}</div>`;
+          if (isAuto(m, sl.time)) return `<div class="dr"${tomorrow ? "" : ` data-act="hitem" data-slot="${sl.key}" data-id="${m.id}"`}><span class="nms">${esc(m.name)} · ${esc(doseText(m))}</span><span>automatisch</span></div>`;
+          return `<div class="mr"${tomorrow ? "" : ` data-act="hitem" data-slot="${sl.key}" data-id="${m.id}"`}><div class="pill">${medIcon(m)}</div><div class="grow"><div class="nm">${esc(m.name)}</div><div class="ds">${esc(doseText(m))}</div></div>${tomorrow ? "" : `<button class="chk" data-act="tick" data-slot="${sl.key}" data-id="${m.id}" aria-label="Eingenommen"></button>`}</div>`;
         }
         const sub = st === "taken" ? (e.auto ? "automatisch" : hm(new Date(e.at))) : st === "skipped" ? "ausgelassen" : "vergessen";
         const da = `data-slot="${sl.key}" data-id="${m.id}"`;
@@ -480,7 +480,8 @@ let hEdit = null;
 function openEntry(key, id) {
   const sl = slotByKey(key), m = S.meds.find(x => x.id === id); if (!sl || !m) return;
   const e = entry(key, m);
-  hEdit = { key, id, s: e ? e.s : "missed", time: e && e.s === "taken" ? hm(new Date(e.at)) : sl.time };
+  const today = dkey(sl.at) === dkey(new Date());
+  hEdit = { key, id, s: e ? e.s : today ? "taken" : "missed", time: e && e.s === "taken" ? hm(new Date(e.at)) : today ? hm(new Date()) : sl.time };
   drawEntry();
 }
 function drawEntry() {
