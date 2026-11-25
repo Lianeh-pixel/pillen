@@ -281,7 +281,7 @@ function viewToday() {
   if (rows.length) {
     const tomorrow = next[0] && dkey(next[0].at) !== dkey(now);
     h += `<div class="lbl">${due.length ? "Danach" : "Als Nächstes"}${tomorrow ? " · morgen" : ""}</div><div class="card">` + rows.map(({ sl, m }) =>
-      `<div class="item"><span class="tm acc">${sl.time}</span><div class="grow"><div class="nm">${esc(m.name)}</div><div class="ds">${esc(doseText(m))}</div></div>${dkey(sl.at) === dkey(now) ? `<button class="chk" data-act="tick" data-slot="${sl.key}" data-id="${m.id}" aria-label="Eingenommen"></button>` : ""}</div>`).join("") + `</div>`;
+      `<div class="item" data-act="edit" data-id="${m.id}" style="cursor:pointer"><span class="tm acc">${sl.time}</span><div class="grow"><div class="nm">${esc(m.name)}</div><div class="ds">${esc(doseText(m))}</div></div>${dkey(sl.at) === dkey(now) ? `<button class="chk" data-act="tick" data-slot="${sl.key}" data-id="${m.id}" aria-label="Eingenommen"></button>` : ""}</div>`).join("") + `</div>`;
   } else if (!due.length) h += `<div class="card calm">Für heute ist alles erledigt.</div>`;
   // erledigt heute
   const done = [];
