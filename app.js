@@ -487,7 +487,7 @@ function drawEntry() {
   const sl = slotByKey(hEdit.key), m = S.meds.find(x => x.id === hEdit.id);
   openSheet(`<h2>${esc(m.name)}</h2><div class="sub">${fmtDay(sl.at)} · ${sl.time} Uhr · ${esc(doseText(m))}</div>
     <div class="seg" style="margin-top:18px">${[["taken", "Eingenommen"], ["skipped", "Ausgelassen"], ["missed", "Vergessen"]].map(([k, t]) => `<button data-act="hstate" data-m="${k}" class="${hEdit.s === k ? "on" : ""}">${t}</button>`).join("")}</div>
-    ${hEdit.s === "taken" ? `<div class="bigt"><input type="time" data-act="htime" value="${hEdit.time}"><div class="s">eingenommen um</div></div>` : ""}
+    ${hEdit.s === "taken" ? `<div class="bigt"><label class="tw"><span class="t" id="htimeTxt">${hEdit.time}</span><input type="time" data-act="htime" value="${hEdit.time}"></label><div class="s">eingenommen um</div></div>` : ""}
     <button class="btn" data-act="hsave" style="margin-top:22px">Speichern</button>
     ${entry(hEdit.key, m) ? `<button class="tlink" data-act="hundo">Einnahme zurücknehmen</button>` : ""}
     `);
@@ -579,6 +579,7 @@ document.addEventListener("click", async e => {
     const url = URL.createObjectURL(blob), x = document.createElement("a"); x.href = url; x.download = name; x.click(); setTimeout(() => URL.revokeObjectURL(url), 2000);
   }
 });
+document.addEventListener("input", e => { if (e.target.dataset && e.target.dataset.act === "htime" && $("#htimeTxt")) $("#htimeTxt").textContent = e.target.value || hEdit.time; });
 document.addEventListener("change", async e => {
   const el = e.target;
   if (el.dataset.act === "addtime" && el.value) { readEdit(); if (!edit.times.includes(el.value)) edit.times.push(el.value); edit.times.sort(); drawEdit(); }

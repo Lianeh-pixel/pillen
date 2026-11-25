@@ -236,3 +236,9 @@ label.l { display: block; font-size: 12px; color: var(--muted); margin: 16px 4px
 .bigt input { background: none; border: 0; outline: none; text-align: center; font-size: 46px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--text); padding: 0; field-sizing: content; }
 .bigt input::-webkit-calendar-picker-indicator { display: none; }
 .bigt .s { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.bigt input { display: block; width: 100%; margin: 0 auto; text-align: center; }
+.bigt input::-webkit-date-and-time-value { text-align: center; margin: 0 auto; }
+.bigt input::-webkit-datetime-edit { display: inline-flex; justify-content: center; width: 100%; }
+.bigt .tw { position: relative; display: inline-block; cursor: pointer; }
+.bigt .tw .t { font-size: 46px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--text); }
+.bigt .tw input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; font-size: 16px; }
