@@ -230,3 +230,4 @@ label.l { display: block; font-size: 12px; color: var(--muted); margin: 16px 4px
 .er .v .ein { text-align: center; padding: 6px 2px; }
 .er .v { gap: 6px; }
 .dr[data-act] { cursor: pointer; }
+.tlink { display: block; margin: 14px auto 0; padding: 8px; color: var(--acc); font-size: 14px; font-weight: 600; }

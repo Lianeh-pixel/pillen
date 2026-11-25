@@ -296,7 +296,7 @@ function viewToday() {
         }
         const sub = st === "taken" ? (e.auto ? "automatisch" : hm(new Date(e.at))) : st === "skipped" ? "ausgelassen" : "vergessen";
         const da = `data-slot="${sl.key}" data-id="${m.id}"`;
-        return `<div class="dr" data-act="edit" data-id="${m.id}"><span class="nms">${esc(m.name)} · ${esc(doseText(m))}</span><span class="${st === "missed" ? "st-miss" : ""}">${sub}</span>${st === "taken" ? `<button class="dot" data-act="untick" ${da} aria-label="Rückgängig">${IC.check}</button>` : st === "skipped" ? `<button class="dot skip" data-act="untick" ${da} aria-label="Rückgängig">${IC.skip}</button>` : `<button class="chk sm" data-act="tick" ${da} aria-label="Eingenommen"></button>`}</div>`;
+        return `<div class="dr" data-act="hitem" data-slot="${sl.key}" data-id="${m.id}"><span class="nms">${esc(m.name)} · ${esc(doseText(m))}</span><span class="${st === "missed" ? "st-miss" : ""}">${sub}</span>${st === "taken" ? `<button class="dot" data-act="untick" ${da} aria-label="Rückgängig">${IC.check}</button>` : st === "skipped" ? `<button class="dot skip" data-act="untick" ${da} aria-label="Rückgängig">${IC.skip}</button>` : `<button class="chk sm" data-act="tick" ${da} aria-label="Eingenommen"></button>`}</div>`;
       }).join("");
       return `<div class="tli"><span class="tln${allDone ? " done" : ""}"></span><div class="tlh"><b class="${allDone || tomorrow ? "muted" : ""}">${sl.time}</b><span>${right}</span></div>
         <div class="grp">${body}${open.length > 1 ? `<button class="gbtn" data-act="takeall" data-slot="${sl.key}">Alle eingenommen</button>` : ""}</div></div>`;
@@ -490,6 +490,7 @@ function drawEntry() {
     ${hEdit.s === "taken" ? `<label class="l">Eingenommen um</label><input class="field" type="time" data-act="htime" value="${hEdit.time}">` : ""}
     <button class="btn" data-act="hsave" style="margin-top:22px">Speichern</button>
     ${entry(hEdit.key, m) ? `<button class="btn ghost" data-act="hundo" style="margin-top:10px">Einnahme zurücknehmen</button>` : ""}
+    <button class="tlink" data-act="edit" data-id="${m.id}">Medikament bearbeiten</button>
     `);
 }
 function saveEntry() {
