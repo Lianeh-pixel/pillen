@@ -199,3 +199,30 @@ label.l { display: block; font-size: 12px; color: var(--muted); margin: 16px 4px
 .chk.sm { width: 22px; height: 22px; margin-left: 0; }
 .dr .dot, .dr .chk { position: relative; }
 .dr .dot:after, .dr .chk:after { content: ""; position: absolute; inset: -12px; }
+
+/* Bearbeiten-Maske (schlicht, ohne Kästen) */
+.ename { width: 100%; background: none; border: 0; border-bottom: 1px solid var(--line); padding: 10px 2px 12px; font-size: 20px; font-weight: 600; outline: none; }
+.ename:focus { border-color: var(--acc); }
+.er { display: flex; align-items: center; gap: 12px; min-height: 58px; border-bottom: 1px solid var(--line); padding: 0 2px; }
+.er .k { color: var(--muted); font-size: 15px; }
+.er .v { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 16px; }
+.er .v span { color: var(--muted); }
+.ein { width: 70px; background: none; border: 0; text-align: right; font-size: 17px; font-weight: 600; outline: none; padding: 6px 0; border-bottom: 1px dashed transparent; }
+.ein:focus { border-bottom-color: var(--acc); }
+.esel { background: none; border: 0; font-size: 16px; outline: none; padding: 6px 0; text-align: right; -webkit-appearance: none; appearance: none; }
+.esel.acc { color: var(--acc); font-weight: 600; }
+.esel option { background: var(--card); color: var(--text); }
+.stp { display: flex; align-items: center; background: var(--card); border-radius: 999px; }
+.stp button { width: 36px; height: 36px; color: var(--acc); font-size: 20px; }
+.stp input { width: 34px; background: none; border: 0; text-align: center; font-weight: 600; font-size: 16px; outline: none; }
+.tch { display: flex; flex-wrap: wrap; gap: 8px; padding: 2px 0 4px; }
+.tcp { position: relative; display: inline-flex; align-items: center; border-radius: 999px; background: color-mix(in srgb, var(--acc) 18%, transparent); color: var(--acc); font-weight: 600; font-size: 15px; }
+.tcp > button:first-child { display: inline-flex; align-items: center; gap: 6px; padding: 9px 4px 9px 14px; font-variant-numeric: tabular-nums; }
+.tcp svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+.tcp .x { padding: 0 12px 0 6px; font-size: 18px; opacity: .6; }
+.tcp.a { background: var(--card); color: var(--muted); }
+.tcp.p { padding: 9px 14px; background: none; border: 1.5px dashed var(--line); color: var(--acc); cursor: pointer; }
+.tcp.p input { position: absolute; inset: 0; opacity: 0; width: 100%; }
+.nrow { display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--line); }
+.nrow .ename { border: 0; font-size: 24px; letter-spacing: -.02em; padding: 8px 2px 12px; flex: 1; min-width: 0; }
+.nrow:focus-within { border-color: var(--acc); }

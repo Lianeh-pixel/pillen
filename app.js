@@ -54,6 +54,8 @@ const IC = {
   plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
   gear: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
   back: '<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
+  bell: '<svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>',
+  auto: '<svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>',
   trash: '<svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg>'
 };
 const medIcon = m => IC[(unitInfo(m.unit) || [, , "round"])[2]] || IC.round;
@@ -434,25 +436,19 @@ function openEdit(id) {
   drawEdit();
 }
 function drawEdit() {
-  const m = edit;
-  const modeField = {
-    off: `<div class="hint">Keine Erinnerung an den Vorrat.</div>`,
-    rest: `<div class="inl" style="margin-top:10px"><span>bei</span><input class="field" inputmode="decimal" data-f="stockRest" value="${m.stockRest ?? ""}"><span>${esc(m.unit || "Stück")} Rest</span></div>`,
-    date: `<input class="field" style="margin-top:10px" type="date" data-f="stockDate" value="${m.stockDate || ""}">`,
-    span: `<div class="inl" style="margin-top:10px"><span>nach</span><input class="field" inputmode="numeric" data-f="stockSpan" value="${m.stockSpan ?? ""}"><select class="field" data-f="stockSpanUnit" style="flex:0 0 120px"><option value="d"${m.stockSpanUnit === "d" ? " selected" : ""}>Tagen</option><option value="w"${m.stockSpanUnit === "w" ? " selected" : ""}>Wochen</option><option value="m"${m.stockSpanUnit === "m" ? " selected" : ""}>Monaten</option></select></div><div class="hint">gezählt ab der letzten neuen Packung.</div>`
-  }[m.stockMode || "off"];
-  openSheet(`<div class="hdr" style="margin:0 0 4px"><h2>${m.isNew ? "Neues Medikament" : esc(m.name) || "Medikament"}</h2>${m.isNew ? "" : `<button class="ic" data-act="del" aria-label="Löschen">${IC.trash}</button>`}</div>
-    <label class="l">Name</label><input class="field" data-f="name" value="${esc(m.name)}" placeholder="z. B. Vitamin D" autocomplete="off">
-    <label class="l">Dosis</label><div class="two"><input class="field" inputmode="decimal" data-f="amount" value="${m.amount != null ? fmtNum(m.amount) : ""}"><select class="field" data-act="unitsel">${UNITS.map(u => `<option value="${u[0]}"${(unitInfo(m.unit) || UNITS[0]) === u ? " selected" : ""}>${u[0]}</option>`).join("")}</select><input type="hidden" data-f="unit" value="${esc((unitInfo(m.unit) || UNITS[0])[0])}"></div>
-    <label class="l">Erinnerungen</label>
-    <div class="card">${(m.times || []).map((t, i) => `<div class="trow"><span class="tt">${t}</span><div class="seg"><button data-act="tmode" data-i="${i}" data-m="" class="${isAuto(m, t) ? "" : "on"}">Erinnern</button><button data-act="tmode" data-i="${i}" data-m="auto" class="${isAuto(m, t) ? "on" : ""}">Automatisch</button></div><button class="x" data-act="deltime" data-i="${i}" aria-label="Entfernen">×</button></div>`).join("")}<label class="addt">+ Uhrzeit<input type="time" data-act="addtime"></label></div>
-    <label class="l">Vorrat</label>
-    <div class="inl"><input class="field" inputmode="decimal" data-f="stock" value="${m.stock != null ? fmtNum(m.stock) : ""}" placeholder="optional"><span>${esc(m.unit || "Stück")} übrig</span></div>
-    <label class="l">Erinnern, wenn der Vorrat zur Neige geht</label>
-    <div class="seg">${[["off", "Aus"], ["rest", "Restbestand"], ["span", "Zeitspanne"]].map(([k, t]) => `<button data-act="smode" data-m="${k}" class="${(m.stockMode || "off") === k ? "on" : ""}">${t}</button>`).join("")}</div>
-    ${modeField}
-    <button class="btn" data-act="save" style="margin-top:22px">Speichern</button>
-    `);
+  const m = edit, u = esc(m.unit || "Stück"), sm = m.stockMode || "off";
+  const sel = (v, opts) => opts.map(([k, t]) => `<option value="${k}"${v === k ? " selected" : ""}>${t}</option>`).join("");
+  const extra = sm === "rest" ? `<div class="er"><span class="k">bei</span><div class="v"><input class="ein" inputmode="decimal" data-f="stockRest" value="${m.stockRest ?? ""}"><span>${u}</span></div></div>`
+    : sm === "span" ? `<div class="er"><span class="k">nach</span><div class="v"><input class="ein" inputmode="numeric" data-f="stockSpan" value="${m.stockSpan ?? ""}"><select class="esel" data-f="stockSpanUnit">${sel(m.stockSpanUnit || "d", [["d", "Tagen"], ["w", "Wochen"], ["m", "Monaten"]])}</select></div></div>` : "";
+  openSheet(`${m.isNew ? `<h2 style="margin:6px 0 8px">Neues Medikament</h2>` : ""}<div class="nrow"><input class="ename" data-f="name" value="${esc(m.name)}" placeholder="Name" autocomplete="off">${m.isNew ? "" : `<button class="ic" data-act="del" aria-label="Löschen">${IC.trash}</button>`}</div>
+    <div class="er"><span class="k">Dosis</span><div class="v"><div class="stp"><button data-act="dose" data-d="-1" aria-label="Weniger">−</button><input inputmode="decimal" data-f="amount" value="${m.amount != null ? fmtNum(m.amount) : ""}"><button data-act="dose" data-d="1" aria-label="Mehr">+</button></div><select class="esel acc" data-act="unitsel">${UNITS.map(x => `<option value="${x[0]}"${(unitInfo(m.unit) || UNITS[0]) === x ? " selected" : ""}>${x[0]}</option>`).join("")}</select><input type="hidden" data-f="unit" value="${esc((unitInfo(m.unit) || UNITS[0])[0])}"></div></div>
+    <div class="lbl">Uhrzeiten</div>
+    <div class="tch">${(m.times || []).map((t, i) => `<span class="tcp${isAuto(m, t) ? " a" : ""}"><button data-act="ttog" data-i="${i}">${isAuto(m, t) ? IC.auto : IC.bell}${t}</button><button class="x" data-act="deltime" data-i="${i}" aria-label="Entfernen">×</button></span>`).join("")}<label class="tcp p">+ Uhrzeit<input type="time" data-act="addtime"></label></div>
+    <div class="lbl">Vorrat</div>
+    <div class="er"><span class="k">Bestand</span><div class="v"><input class="ein" inputmode="decimal" data-f="stock" value="${m.stock != null ? fmtNum(m.stock) : ""}" placeholder="–"><span>${u}</span></div></div>
+    <div class="er"><span class="k">Warnen</span><div class="v"><select class="esel acc" data-act="smodesel">${sel(sm, [["off", "Aus"], ["rest", "bei Restbestand"], ["span", "nach Zeitspanne"]])}</select></div></div>
+    ${extra}
+    <button class="btn" data-act="save" style="margin-top:24px">Speichern</button>`);
 }
 function readEdit() {
   document.querySelectorAll("#sheet [data-f]").forEach(el => {
@@ -553,6 +549,8 @@ document.addEventListener("click", async e => {
   else if (a === "hundo") undoEntry();
   else if (a === "hsave") { const t = $("#sheet [data-act=htime]"); if (t && t.value) hEdit.time = t.value; saveEntry(); }
   else if (a === "tmode") { readEdit(); const t = edit.times[+b.dataset.i]; edit.auto = edit.auto || {}; if (b.dataset.m) { if (!edit.auto[t]) edit.auto[t] = Date.now(); } else delete edit.auto[t]; drawEdit(); }
+  else if (a === "ttog") { readEdit(); const t = edit.times[+b.dataset.i]; edit.auto = edit.auto || {}; if (edit.auto[t]) delete edit.auto[t]; else edit.auto[t] = Date.now(); drawEdit(); }
+  else if (a === "dose") { readEdit(); const v = (edit.amount || 0) + +b.dataset.d; edit.amount = Math.max(v < 1 ? 0.5 : 1, Math.round(v * 2) / 2); drawEdit(); }
   else if (a === "deltime") { readEdit(); edit.times.splice(+b.dataset.i, 1); drawEdit(); }
   else if (a === "smode") { readEdit(); edit.stockMode = b.dataset.m; drawEdit(); }
   else if (a === "take" || a === "skip") { b.dataset.slot.split(",").map(slotByKey).filter(Boolean).forEach(sl => mark(sl, openMeds(sl).filter(m => stateOf(sl, m) === "due"), a === "take" ? "taken" : "skipped")); render(); if (a === "take") toast("Gut gemacht ✓"); }
@@ -591,6 +589,7 @@ document.addEventListener("change", async e => {
       S.meds = d.meds; S.log = d.log || {}; save(); closeSheet(); render(); toast("Sicherung geladen.");
     } catch (err) { toast("Laden fehlgeschlagen: " + err.message, 6000); }
   }
+  if (el.dataset.act === "smodesel" && edit) { readEdit(); edit.stockMode = el.value; if (el.value === "span" && edit.stockSpan == null) edit.stockSpan = 30; if (el.value === "rest" && edit.stockRest == null) edit.stockRest = 10; drawEdit(); }
   if (el.dataset.act === "unitsel" && edit) { readEdit(); edit.unit = el.value; drawEdit(); }
 });
 document.querySelectorAll(".nav button").forEach(b => b.addEventListener("click", () => { tab = b.dataset.tab; closeSheet(); render(); scrollTo(0, 0); }));
