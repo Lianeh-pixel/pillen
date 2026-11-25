@@ -242,7 +242,7 @@ function render() {
   else if (tab === "mittel") app.innerHTML = viewMeds();
   else app.innerHTML = viewHistory();
   clearInterval(tick); tick = null;
-  if (tab === "heute") { updateClock(); tick = setInterval(updateClock, 1000); }
+  if (tab === "heute") { updateClock(); tick = setInterval(() => { updateClock(); const n = $("#nextIn"); if (n) n.textContent = inText(+n.dataset.at); }, 1000); }
 }
 
 function header(title, sub, extra = "") {
@@ -258,8 +258,8 @@ function stockAlerts() {
 
 function viewToday() {
   const now = new Date();
-  let h = header("Heute", fmtDay(now), `<button class="ic acc" data-act="new" aria-label="Neues Mittel">${IC.plus}</button>`);
-  if (!S.meds.length) return h + `<div class="empty">Noch keine Mittel angelegt.<br>Leg dein erstes Mittel mit Dosis und Uhrzeiten an.<button class="btn" data-act="new">${IC.plus}Erstes Mittel anlegen</button></div>`;
+  let h = header("Heute", fmtDay(now), `<button class="ic acc" data-act="new" aria-label="Neues Medikament">${IC.plus}</button>`);
+  if (!S.meds.length) return h + `<div class="empty">Noch keine Medikamente angelegt.<br>Leg dein erstes Medikament mit Dosis und Uhrzeiten an.<button class="btn" data-act="new">${IC.plus}Erstes Medikament anlegen</button></div>`;
   h += stockAlerts();
   const slots = [...slotsOf(addDays(now, -1)), ...slotsOf(now)];
   // überfällig: ältester offener Termin der letzten 3 Std.
@@ -273,26 +273,35 @@ function viewToday() {
       <button class="btn" data-act="take" data-slot="${keys}">${IC.check}Jetzt einnehmen</button>
       <div class="links"><button data-act="skip" data-slot="${keys}">✕ Auslassen</button><button data-act="snooze" data-slot="${keys}">↻ ${sz > Date.now() ? "Erinnert um " + hm(new Date(sz)) : "Verschieben"}</button></div></div>`;
   }
-  // als Nächstes: kommende Termine untereinander in einem Kasten
-  let next = slots.filter(sl => sl.at > now && remindMeds(sl).length);
-  if (!next.length) next = slotsOf(addDays(now, 1)).filter(sl => remindMeds(sl).length).slice(0, 3);
-  const rows = [];
-  next.forEach(sl => remindMeds(sl, now.getTime()).forEach(m => rows.push({ sl, m })));
-  if (rows.length) {
-    const tomorrow = next[0] && dkey(next[0].at) !== dkey(now);
-    h += `<div class="lbl">${due.length ? "Danach" : "Als Nächstes"}${tomorrow ? " · morgen" : ""}</div><div class="card">` + rows.map(({ sl, m }) =>
-      `<div class="item" data-act="edit" data-id="${m.id}" style="cursor:pointer"><span class="tm acc">${sl.time}</span><div class="grow"><div class="nm">${esc(m.name)}</div><div class="ds">${esc(doseText(m))}</div></div>${dkey(sl.at) === dkey(now) ? `<button class="chk" data-act="tick" data-slot="${sl.key}" data-id="${m.id}" aria-label="Eingenommen"></button>` : ""}</div>`).join("") + `</div>`;
-  } else if (!due.length) h += `<div class="card calm">Für heute ist alles erledigt.</div>`;
-  // erledigt heute
-  const done = [];
-  slotsOf(now).forEach(sl => sl.meds.forEach(m => { const e = entry(sl.key, m); if (e) done.push({ sl, m, e }); else if (stateOf(sl, m) === "missed") done.push({ sl, m, e: { s: "missed" } }); }));
-  if (done.length) {
-    h += `<div class="lbl grey">Heute erledigt</div><div class="card">` + done.map(({ sl, m, e }) =>
-      `<button class="item done" data-act="hitem" data-slot="${sl.key}" data-id="${m.id}"><span class="tm">${sl.time}</span><div class="grow"><div class="nm">${esc(m.name)}</div><div class="ds">${e.s === "taken" && e.auto ? "automatisch · " + esc(doseText(m)) + " abgezogen" : e.s === "taken" ? "eingenommen um " + hm(new Date(e.at)) : e.s === "skipped" ? "ausgelassen" : "vergessen"}</div></div>` +
-      `<span class="chk ${e.s === "taken" ? "on" : e.s === "skipped" ? "skip" : ""}">${e.s === "taken" ? IC.check : e.s === "skipped" ? IC.skip : ""}</span></button>`).join("") + `</div>`;
+  // Tagesverlauf: jede Uhrzeit als eigene Karte an einer Zeitleiste
+  const dueSet = new Set(); due.forEach(x => openMeds(x).filter(m => stateOf(x, m) === "due").forEach(m => dueSet.add(x.key + "|" + m.id)));
+  let today = slotsOf(now), nextAt = null;
+  const nxt = today.find(sl => sl.at > now && remindMeds(sl).length); if (nxt) nextAt = nxt.at;
+  let groups = today.map(sl => ({ sl, tomorrow: false })), anyOpen = today.some(sl => sl.at > now && openMeds(sl).length);
+  if (!anyOpen) { const t = slotsOf(addDays(now, 1)).slice(0, 1); groups = groups.concat(t.map(sl => ({ sl, tomorrow: true }))); }
+  if (groups.length) {
+    h += `<div class="tl">` + groups.map(({ sl, tomorrow }) => {
+      const rows = sl.meds.filter(m => !dueSet.has(sl.key + "|" + m.id));
+      if (!rows.length) return "";
+      const open = tomorrow ? [] : rows.filter(m => { const st = stateOf(sl, m); return (st === "upcoming" || st === "due") && !isAuto(m, sl.time); });
+      const allDone = !tomorrow && rows.every(m => { const st = stateOf(sl, m); return st !== "upcoming" && st !== "due"; });
+      const right = tomorrow ? "morgen" : allDone ? "erledigt" : nextAt && sl.at.getTime() === nextAt.getTime() ? `<span class="in" id="nextIn" data-at="${sl.at.getTime()}">${inText(sl.at)}</span>` : "";
+      const body = rows.map(m => {
+        const e = entry(sl.key, m), st = tomorrow ? "upcoming" : stateOf(sl, m);
+        if (st === "upcoming" || st === "due") {
+          if (isAuto(m, sl.time)) return `<div class="dr"><span class="nms">${esc(m.name)} · ${esc(doseText(m))}</span><span>automatisch</span></div>`;
+          return `<div class="mr" data-act="edit" data-id="${m.id}"><div class="pill">${medIcon(m)}</div><div class="grow"><div class="nm">${esc(m.name)}</div><div class="ds">${esc(doseText(m))}</div></div>${tomorrow ? "" : `<button class="chk" data-act="tick" data-slot="${sl.key}" data-id="${m.id}" aria-label="Eingenommen"></button>`}</div>`;
+        }
+        const sub = st === "taken" ? (e.auto ? "automatisch" : hm(new Date(e.at))) : st === "skipped" ? "ausgelassen" : "vergessen";
+        return `<button class="dr" data-act="hitem" data-slot="${sl.key}" data-id="${m.id}"><span class="nms">${esc(m.name)} · ${esc(doseText(m))}</span><span class="${st === "missed" ? "st-miss" : ""}">${sub}</span>${st === "taken" ? `<span class="dot">${IC.check}</span>` : st === "skipped" ? `<span class="dot skip">${IC.skip}</span>` : ""}</button>`;
+      }).join("");
+      return `<div class="tli"><span class="tln${allDone ? " done" : ""}"></span><div class="tlh"><b class="${allDone || tomorrow ? "muted" : ""}">${sl.time}</b><span>${right}</span></div>
+        <div class="grp">${body}${open.length > 1 ? `<button class="gbtn" data-act="takeall" data-slot="${sl.key}">Alle eingenommen</button>` : ""}</div></div>`;
+    }).join("") + `</div>`;
   }
   return h;
 }
+function inText(at) { const m = Math.max(1, Math.round((at - Date.now()) / 60e3)), hh = Math.floor(m / 60); return "in " + (hh ? hh + " Std. " : "") + (m % 60) + " Min."; }
 const dayWord = d => dkey(d) === dkey(new Date()) ? "heute" : "gestern";
 function ringSvg(frac) {
   let ticks = "";
@@ -315,8 +324,8 @@ function updateClock() {
 setInterval(() => { if (tab === "heute" && !$("#ring")) { const now = Date.now(); const s = [...slotsOf(new Date())].some(sl => sl.at.getTime() <= now && now - sl.at.getTime() < 61e3); if (s) render(); } }, 30e3);
 
 function viewMeds() {
-  let h = header("Mittel", S.meds.length ? S.meds.length + (S.meds.length === 1 ? " Mittel" : " Mittel") : "", `<button class="ic acc" data-act="new" aria-label="Neues Mittel">${IC.plus}</button>`);
-  if (!S.meds.length) return h + `<div class="empty">Noch keine Mittel angelegt.<button class="btn" data-act="new">${IC.plus}Mittel anlegen</button></div>`;
+  let h = header("Medikamente", S.meds.length ? S.meds.length + (S.meds.length === 1 ? " Medikament" : " Medikamente") : "", `<button class="ic acc" data-act="new" aria-label="Neues Medikament">${IC.plus}</button>`);
+  if (!S.meds.length) return h + `<div class="empty">Noch keine Medikamente angelegt.<button class="btn" data-act="new">${IC.plus}Medikament anlegen</button></div>`;
   h += stockAlerts();
   h += S.meds.slice().sort((a, b) => a.name.localeCompare(b.name, "de")).map(m => {
     const d = stockDays(m), has = m.stock != null;
@@ -411,7 +420,7 @@ function drawEdit() {
     date: `<input class="field" style="margin-top:10px" type="date" data-f="stockDate" value="${m.stockDate || ""}">`,
     span: `<div class="inl" style="margin-top:10px"><span>nach</span><input class="field" inputmode="numeric" data-f="stockSpan" value="${m.stockSpan ?? ""}"><select class="field" data-f="stockSpanUnit" style="flex:0 0 120px"><option value="d"${m.stockSpanUnit === "d" ? " selected" : ""}>Tagen</option><option value="w"${m.stockSpanUnit === "w" ? " selected" : ""}>Wochen</option><option value="m"${m.stockSpanUnit === "m" ? " selected" : ""}>Monaten</option></select></div><div class="hint">gezählt ab der letzten neuen Packung.</div>`
   }[m.stockMode || "off"];
-  openSheet(`<div class="hdr" style="margin:0 0 4px"><h2>${m.isNew ? "Neues Mittel" : esc(m.name) || "Mittel"}</h2>${m.isNew ? "" : `<button class="ic" data-act="del" aria-label="Löschen">${IC.trash}</button>`}</div>
+  openSheet(`<div class="hdr" style="margin:0 0 4px"><h2>${m.isNew ? "Neues Medikament" : esc(m.name) || "Medikament"}</h2>${m.isNew ? "" : `<button class="ic" data-act="del" aria-label="Löschen">${IC.trash}</button>`}</div>
     <label class="l">Name</label><input class="field" data-f="name" value="${esc(m.name)}" placeholder="z. B. Vitamin D" autocomplete="off">
     <label class="l">Dosis</label><div class="two"><input class="field" inputmode="decimal" data-f="amount" value="${m.amount != null ? fmtNum(m.amount) : ""}"><select class="field" data-act="unitsel">${UNITS.map(u => `<option value="${u[0]}"${(unitInfo(m.unit) || UNITS[0]) === u ? " selected" : ""}>${u[0]}</option>`).join("")}</select><input type="hidden" data-f="unit" value="${esc((unitInfo(m.unit) || UNITS[0])[0])}"></div>
     <label class="l">Erinnerungen</label>
@@ -498,7 +507,7 @@ async function openSettings() {
     <div class="card"><div class="row-set"><div><div class="t">Erinnerungen${NATIVE ? "" : " per Push"}</div><div class="x">${pushTxt}</div></div>${on ? `<button class="a" data-act="testpush">Test senden</button>` : `<button class="a" data-act="push">Einschalten</button>`}</div></div>
     <div class="seg" style="margin-top:12px">${sounds.map(([k, t]) => `<button data-act="sound" data-m="${k}" class="${S.sound === k ? "on" : ""}">${t}</button>`).join("")}</div>
     <div class="lbl">Daten</div>
-    <div class="card"><div class="row-set"><div><div class="t">Sicherung speichern</div><div class="x">Alle Mittel und der Verlauf als Datei</div></div><button class="a" data-act="export">Speichern</button></div>
+    <div class="card"><div class="row-set"><div><div class="t">Sicherung speichern</div><div class="x">Alle Medikamente und der Verlauf als Datei</div></div><button class="a" data-act="export">Speichern</button></div>
     <div class="row-set"><div><div class="t">Sicherung laden</div><div class="x">Ersetzt die Daten auf diesem Gerät</div></div><label class="a" style="color:var(--acc);font-weight:600;font-size:14px">Laden<input type="file" accept="${NATIVE ? "" : "application/json,.json"}" data-act="import" hidden></label></div></div>
     <button class="btn ghost" data-act="close" style="margin-top:22px">Fertig</button>`);
 }
@@ -514,7 +523,8 @@ document.addEventListener("click", async e => {
   else if (a === "settings") openSettings();
   else if (a === "close") closeSheet();
   else if (a === "save") saveEdit();
-  else if (a === "del") { if (confirm(edit.name + " wirklich löschen? Der Verlauf dieses Mittels wird ausgeblendet.")) { S.meds = S.meds.filter(x => x.id !== edit.id); save(); closeSheet(); render(); } }
+  else if (a === "del") { if (confirm(edit.name + " wirklich löschen? Der Verlauf dieses Medikaments wird ausgeblendet.")) { S.meds = S.meds.filter(x => x.id !== edit.id); save(); closeSheet(); render(); } }
+  else if (a === "takeall") { const sl = slotByKey(b.dataset.slot); if (sl) { mark(sl, openMeds(sl).filter(m => !isAuto(m, sl.time)), "taken"); render(); toast("Gut gemacht ✓"); } }
   else if (a === "hitem") openEntry(b.dataset.slot, b.dataset.id);
   else if (a === "hstate") { const t = $("#sheet [data-act=htime]"); if (t) hEdit.time = t.value || hEdit.time; hEdit.s = b.dataset.m; drawEntry(); }
   else if (a === "hundo") undoEntry();
