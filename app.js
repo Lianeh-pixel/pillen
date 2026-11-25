@@ -258,7 +258,7 @@ function stockAlerts() {
 
 function viewToday() {
   const now = new Date();
-  let h = header("Heute", fmtDay(now), `<button class="ic acc" data-act="new" aria-label="Neues Medikament">${IC.plus}</button>`);
+  let h = header("Tagesplan", fmtDay(now), `<button class="ic acc" data-act="new" aria-label="Neues Medikament">${IC.plus}</button>`);
   if (!S.meds.length) return h + `<div class="empty">Noch keine Medikamente angelegt.<br>Leg dein erstes Medikament mit Dosis und Uhrzeiten an.<button class="btn" data-act="new">${IC.plus}Erstes Medikament anlegen</button></div>`;
   h += stockAlerts();
   const slots = [...slotsOf(addDays(now, -1)), ...slotsOf(now)];
