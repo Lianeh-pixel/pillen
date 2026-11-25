@@ -153,6 +153,9 @@ label.l { display: block; font-size: 12px; color: var(--muted); margin: 16px 4px
 .dots.tiny { grid-template-columns: repeat(14, 1fr); gap: 4px; }
 .dots.tiny .d i { width: 11px; height: 11px; }
 .d i.today { outline: 2px solid var(--acc); outline-offset: 2px; }
+.d.sel { color: var(--acc); font-weight: 600; }
+.d.sel i { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--acc); }
+.d.sel i.today { outline: none; }
 .d i.none { background: transparent; border: 1px dashed var(--line); }
 
 /* Unten */

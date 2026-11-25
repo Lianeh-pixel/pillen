@@ -384,20 +384,23 @@ function viewHistory() {
   const cls = hist.mode === "woche" ? "" : hist.mode === "monat" ? "small" : "tiny";
   let pre = "";
   if (hist.mode === "monat") { const wd = (from.getDay() + 6) % 7; for (let i = 0; i < wd; i++) pre += `<div class="d"></div>`; }
+  const past = days.filter(x => x.d <= today), selKey = past.some(x => dkey(x.d) === hist.day) ? hist.day : past.length ? dkey(past[past.length - 1].d) : null;
   h += `<div class="dots ${cls}">${pre}${days.map(({ d, st }) => {
     let bg = "";
     if (st && st.total) { const f = st.taken / st.total; bg = f >= 1 ? "background:var(--acc)" : f > 0 ? `background:conic-gradient(var(--acc) 0 ${Math.round(f * 100)}%,var(--track) ${Math.round(f * 100)}% 100%)` : ""; }
     const isToday = dkey(d) === dkey(today);
-    return `<div class="d"><i class="${!st || !st.total ? "none" : ""} ${isToday ? "today" : ""}" style="${bg}"></i>${hist.mode === "woche" ? WD[d.getDay()] : hist.mode === "monat" ? d.getDate() : ""}</div>`;
+    const sel = dkey(d) === selKey, fut = d > today;
+    return `<${fut ? "div" : `button data-act="hday" data-k="${dkey(d)}"`} class="d${sel ? " sel" : ""}"><i class="${!st || !st.total ? "none" : ""} ${isToday ? "today" : ""}" style="${bg}"></i>${hist.mode === "woche" ? WD[d.getDay()] : hist.mode === "monat" ? d.getDate() : ""}</${fut ? "div" : "button"}>`;
   }).join("")}</div>`;
-  // Liste der Tage (neueste zuerst)
-  const list = days.filter(x => x.st && x.st.items.length).reverse().slice(0, 31);
-  if (!list.length) h += `<div class="card calm">In diesem Zeitraum gibt es noch keine Einträge.</div>`;
-  list.forEach(({ d, st }) => {
-    const dd = dkey(d) === dkey(addDays(today, 1)) ? "Morgen" : dkey(d) === dkey(today) ? "Heute" : dkey(d) === dkey(addDays(today, -1)) ? "Gestern · " + d.toLocaleDateString("de-DE", { weekday: "long" }) : d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
-    h += `<div class="lbl">${dd}</div><div class="card">` + st.items.map(({ sl, m, s, e }) =>
-      `<${s === "planned" ? "div" : `button data-act="hitem" data-slot="${sl.key}" data-id="${m.id}"`} class="item"><span class="tm">${sl.time}</span><div class="nm grow">${esc(m.name)}</div>${s === "planned" ? `<span class="st-skip">${isAuto(m, sl.time) ? "automatisch" : "geplant"}</span>` : s === "taken" ? `<span class="st-ok">${hm(new Date(e.at))}</span>` : s === "skipped" ? `<span class="st-skip">ausgelassen</span>` : `<span class="st-miss">vergessen</span>`}</${s === "planned" ? "div" : "button"}>`).join("") + `</div>`;
-  });
+  // Einträge des gewählten Tags
+  const sd = days.find(x => dkey(x.d) === selKey);
+  if (sd) {
+    const d = sd.d, items = (sd.st && sd.st.items) || [];
+    const dd = dkey(d) === dkey(today) ? "Heute" : dkey(d) === dkey(addDays(today, -1)) ? "Gestern · " + d.toLocaleDateString("de-DE", { weekday: "long" }) : d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
+    h += `<div class="lbl">${dd}</div>`;
+    h += !items.length ? `<div class="card calm">Keine Einträge.</div>` : `<div class="card">` + items.map(({ sl, m, s, e }) =>
+      `<button data-act="hitem" data-slot="${sl.key}" data-id="${m.id}" class="item"><span class="tm">${sl.time}</span><div class="nm grow">${esc(m.name)}</div>${s === "taken" ? `<span class="st-ok">${hm(new Date(e.at))}</span>` : s === "skipped" ? `<span class="st-skip">ausgelassen</span>` : `<span class="st-miss">vergessen</span>`}</button>`).join("") + `</div>`;
+  }
   return h;
 }
 
@@ -541,6 +544,7 @@ document.addEventListener("click", async e => {
     const n = num(v); if (n && n > 0) { m.lastPack = n; refill(m, n); }
   }
   else if (a === "hmode") { hist = { mode: b.dataset.m, off: 0 }; render(); }
+  else if (a === "hday") { hist.day = b.dataset.k; render(); }
   else if (a === "hprev") { hist.off--; render(); }
   else if (a === "hnext") { if (hist.off < 0) hist.off++; render(); }
   else if (a === "sound") { S.sound = b.dataset.m; save(); if (NATIVE) nativeSchedule(); pbSet("sound", S.sound).catch(() => {}); openSettings(); }
