@@ -177,3 +177,22 @@ label.l { display: block; font-size: 12px; color: var(--muted); margin: 16px 4px
 .row-set button.a { color: var(--acc); font-weight: 600; font-size: 14px; white-space: nowrap; }
 
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(76px + env(safe-area-inset-bottom)); background: var(--text); color: var(--bg); padding: 11px 18px; border-radius: 999px; font-size: 13.5px; z-index: 20; max-width: 90vw; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+
+/* Verlauf: Balken + pro Medikament */
+.bcard { padding-bottom: 12px; }
+.bars { display: flex; align-items: flex-end; gap: 6px; height: 120px; padding: 18px 16px 0; }
+.bars .b { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 6px; min-width: 0; }
+.bars .b i { display: block; width: 100%; max-width: 18px; border-radius: 6px; background: color-mix(in srgb, var(--acc) 45%, var(--track)); }
+.bars .b.now i { background: var(--acc); }
+.bars .b.fut i { background: var(--track); height: 6px !important; }
+.bars .b s { text-decoration: none; font-size: 10.5px; color: var(--muted); height: 13px; white-space: nowrap; }
+.bars .b.now s { color: var(--acc); font-weight: 600; }
+.pm { padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.pm:last-child { border: 0; }
+.pm .r { display: flex; justify-content: space-between; align-items: baseline; }
+.pm .n { font-weight: 600; }
+.pm .p { font-weight: 600; color: var(--acc); }
+.pm .t { height: 6px; border-radius: 3px; background: var(--track); margin: 8px 0 6px; overflow: hidden; }
+.pm .t i { display: block; height: 100%; background: var(--acc); border-radius: 3px; }
+.pm .f { font-size: 12.5px; color: var(--muted); }
+.pm .f b { color: var(--warn); font-weight: 500; }

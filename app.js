@@ -392,6 +392,25 @@ function viewHistory() {
     const tap = hist.mode === "woche" || hist.mode === "monat", sel = tap && dkey(d) === selKey, fut = d > today || !tap;
     return `<${fut ? "div" : `button data-act="hday" data-k="${dkey(d)}"`} class="d${sel ? " sel" : ""}"><i class="${!st || !st.total ? "none" : ""} ${isToday ? "today" : ""}" style="${bg}"></i>${hist.mode === "woche" ? WD[d.getDay()] : hist.mode === "monat" ? d.getDate() : ""}</${fut ? "div" : "button"}>`;
   }).join("")}</div>`;
+  // 3 Monate / Jahr: Balken und Übersicht pro Medikament
+  if (hist.mode === "3m" || hist.mode === "jahr") {
+    const groups = [];
+    if (hist.mode === "jahr") for (let mo = 0; mo < 12; mo++) {
+      const ds = days.filter(x => x.d.getMonth() === mo);
+      groups.push({ ds, lab: "JFMAMJJASOND"[mo], now: hist.off === 0 && mo === today.getMonth() });
+    } else for (let i = 0; i < days.length; i += 7) {
+      const ds = days.slice(i, i + 7), first = ds.find(x => x.d.getDate() === 1) || (i === 0 ? ds[0] : null);
+      groups.push({ ds, lab: first ? first.d.toLocaleDateString("de-DE", { month: "short" }).replace(".", "") : "", now: hist.off === 0 && i + 7 >= days.length });
+    }
+    h += `<div class="lbl">${hist.mode === "jahr" ? "Pro Monat" : "Pro Woche"}</div><div class="card bcard"><div class="bars">` + groups.map(g => {
+      let t = 0, k = 0; g.ds.forEach(x => { if (x.st) { t += x.st.total; k += x.st.taken; } });
+      return `<div class="b${g.now ? " now" : ""}${t ? "" : " fut"}"><i style="height:${t ? Math.max(4, Math.round(k / t * 100)) : 0}%"></i><s>${g.lab}</s></div>`;
+    }).join("") + `</div></div>`;
+    const pm = new Map();
+    days.forEach(x => x.st && x.st.items.forEach(({ m, s }) => { const r = pm.get(m.id) || { m, t: 0, k: 0, f: 0 }; r.t++; if (s === "taken") r.k++; if (s === "missed") r.f++; pm.set(m.id, r); }));
+    if (pm.size) h += `<div class="lbl">Pro Medikament</div><div class="card">` + [...pm.values()].map(({ m, t, k, f }) => { const pc = Math.round(k / t * 100);
+      return `<div class="pm"><div class="r"><span class="n">${esc(m.name)}</span><span class="p">${pc} %</span></div><div class="t"><i style="width:${pc}%"></i></div><div class="f">${f ? `<b>${f}× vergessen</b>` : "nie vergessen"}</div></div>`; }).join("") + `</div>`;
+  }
   // Einträge des gewählten Tags
   const sd = (hist.mode === "woche" || hist.mode === "monat") && days.find(x => dkey(x.d) === selKey);
   if (sd) {
