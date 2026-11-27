@@ -3,7 +3,7 @@
 "use strict";
 const NP = window.Capacitor && window.Capacitor.Plugins, LN = NP && NP.LocalNotifications;
 const CHANNEL = { ton: "pillen-ton", vib: "pillen-vib", still: "pillen-still" };
-const DAYS_AHEAD = 21, MAX_NOTES = 400, NAG = 30 * 60e3;
+const DAYS_AHEAD = 21, MAX_NOTES = 400;
 
 // feste Zahl je Mitteilung (gleiche Mitteilung = gleiche Nummer)
 function noteId(s) { let h = 7; for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0; return (Math.abs(h) % 2000000000) + 100; }
@@ -67,7 +67,6 @@ async function nativeSchedule() {
         const sz = S.snooze[sl.key];
         if (t > now) add(ids[0], t, "Zeit für deine Medikamente", body, extra, true, lines);
         if (sz && sz > now) add(ids[2], sz, "Erinnerung: " + sl.time + " Uhr", body, extra, true, lines);
-        else if (!sz && t + NAG > now && now - t < LATE) add(ids[1], t + NAG, "Noch nicht eingenommen", body, extra, true, lines);
       }
     }
     // Vorrat
