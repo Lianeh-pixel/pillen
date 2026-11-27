@@ -84,7 +84,7 @@ returns void language sql security definer set search_path = '' as $$
 $$;
 
 -- Fällige Mitteilungen in den Ausgang legen (läuft jede Minute über pg_cron)
--- due = zur Uhrzeit, nag = nach 30 Min. noch offen, snooze = "später erinnern", stock = Vorrat
+-- due = zur Uhrzeit (nur einmal), snooze = "später erinnern", stock = Vorrat
 create function public.pill_queue()
 returns integer language plpgsql security definer set search_path = '' as $$
 declare r record; n int := 0; kind text; names text;
@@ -109,16 +109,14 @@ begin
     kind := null;
     if r.sent is null or not r.sent then kind := 'due';
     elsif r.snooze_until is not null and not r.snooze_sent and r.snooze_until <= now() then kind := 'snooze';
-    elsif r.snooze_until is null and not r.nag_sent and r.slot <= now() - interval '30 minutes' then kind := 'nag';
     end if;
     continue when kind is null;
     insert into public.pill_slots (device, slot, sent) values (r.device, r.slot, true)
       on conflict (device, slot) do update set sent = true,
-        nag_sent = public.pill_slots.nag_sent or kind = 'nag',
         snooze_sent = public.pill_slots.snooze_sent or kind = 'snooze';
     select string_agg(x->>'name' || coalesce(' · ' || nullif(x->>'dose',''), ''), ', ') into names from jsonb_array_elements(r.meds) x;
     insert into public.pill_outbox (device, payload) values (r.device, jsonb_build_object(
-      'title', case kind when 'nag' then 'Noch nicht eingenommen' else 'Zeit für deine Tabletten' end,
+      'title', 'Zeit für deine Tabletten',
       'body', names, 'slot', r.slot, 'meds', r.meds, 'kind', kind, 'tag', 'slot-' || extract(epoch from r.slot)::bigint));
     n := n + 1;
   end loop;

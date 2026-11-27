@@ -1,6 +1,6 @@
 /* Offline-Unterstützung und Push-Mitteilungen der Pillenerinnerung. */
 importScripts("config.js", "shared.js");
-const VERSION = "pb-v38";
+const VERSION = "pb-v39";
 const SHELL = ["./", "index.html", "style.css", "app.js", "native.js", "shared.js", "config.js", "manifest.webmanifest", "icons/icon-192.png?i=2", "icons/icon-512.png?i=2", "icons/icon-maskable-512.png", "icons/badge.png", "icons/icon.svg?i=2", "fonts/inter-latin.woff2"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(k => Promise.all(k.filter(x => x !== VERSION).map(x => caches.delete(x)))).then(() => self.clients.claim())); });
@@ -22,7 +22,7 @@ self.addEventListener("push", e => {
   // still = ohne Ton und Vibration; vib/ton = normal (Ton regelt Android pro App)
   e.waitUntil(pbGet("sound").catch(() => null).then(sound => self.registration.showNotification(d.title || "MedTimer", {
     body: d.body || "", tag: d.tag || "pillen", renotify: true, requireInteraction: pill, data: d, silent: sound === "still",
-    actions: pill ? [{ action: "taken", title: "Eingenommen" }, { action: "snooze", title: "In 15 Min." }] : [],
+    actions: pill ? [{ action: "taken", title: "Eingenommen" }] : [],
     icon: "icons/icon-192.png?i=2", badge: "icons/badge.png", vibrate: sound === "still" ? undefined : [300, 120, 300, 120, 300]
   })).then(() => tell({ type: "push" })));
 });
@@ -36,11 +36,6 @@ self.addEventListener("notificationclick", e => {
     if (e.action === "taken" && d.slot) {
       await pbInboxAdd({ type: "taken", slot: d.slot, meds: (d.meds || []).map(m => m.id), at: Date.now() });
       if (dev) await pbRpc("pill_slot", { dev, slot: d.slot, open: [] }).catch(() => {});
-      return tell({ type: "inbox" });
-    }
-    if (e.action === "snooze" && d.slot) {
-      await pbInboxAdd({ type: "snooze", slot: d.slot, until: Date.now() + 15 * 60000 });
-      if (dev) await pbRpc("pill_snooze", { dev, slot: d.slot, minutes: 15 }).catch(() => {});
       return tell({ type: "inbox" });
     }
     const cs = await self.clients.matchAll({ type: "window", includeUncontrolled: true });

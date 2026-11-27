@@ -3,7 +3,7 @@
 "use strict";
 const NP = window.Capacitor && window.Capacitor.Plugins, LN = NP && NP.LocalNotifications;
 const CHANNEL = { ton: "pillen-ton", vib: "pillen-vib", still: "pillen-still" };
-const DAYS_AHEAD = 21, MAX_NOTES = 400, NAG = 30 * 60e3;
+const DAYS_AHEAD = 21, MAX_NOTES = 400;
 
 // feste Zahl je Mitteilung (gleiche Mitteilung = gleiche Nummer)
 function noteId(s) { let h = 7; for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0; return (Math.abs(h) % 2000000000) + 100; }
@@ -14,7 +14,7 @@ async function nativeSetup() {
     await LN.createChannel({ id: CHANNEL.ton, name: "Erinnerungen mit Ton", importance: 5, visibility: 1, vibration: true });
     await LN.createChannel({ id: CHANNEL.vib, name: "Erinnerungen nur Vibration", importance: 5, visibility: 1, vibration: true, sound: "stille.wav" });
     await LN.createChannel({ id: CHANNEL.still, name: "Erinnerungen ohne Ton", importance: 4, visibility: 1, vibration: false, sound: "stille.wav" });
-    await LN.registerActionTypes({ types: [{ id: "pill", actions: [{ id: "taken", title: "Eingenommen" }, { id: "snooze", title: "In 15 Min." }] }] });
+    await LN.registerActionTypes({ types: [{ id: "pill", actions: [{ id: "taken", title: "Eingenommen" }] }] });
   } catch (e) { console.warn(e); }
   LN.addListener("localNotificationActionPerformed", ev => {
     const x = (ev.notification && ev.notification.extra) || {};
@@ -22,19 +22,43 @@ async function nativeSetup() {
     if (ev.actionId === "taken" && slots.length) {
       slots.forEach(sl => mark(sl, openMeds(sl).filter(m => sl.at.getTime() >= (m.created || 0) - 60e3), "taken"));
       toast("Eingenommen ✓");
-    } else if (ev.actionId === "snooze" && slots.length) {
-      slots.forEach(sl => snooze(sl, 15));
     }
     tab = x.kind === "stock" ? "mittel" : "heute"; closeSheet(); render();
   });
   LN.addListener("localNotificationReceived", () => render());
+  NP.App.addListener("resume", () => nativeInbox());
+  setInterval(() => { if (!document.hidden) nativeInbox(); }, 5000);
   NP.App.addListener("backButton", () => {
     if (!$("#sheet").hidden) closeSheet();
     else if (tab !== "heute") { tab = "heute"; render(); }
     else NP.App.exitApp();
   });
+  await nativeInbox();
   await nativeAsk();
   nativeSchedule();
+}
+
+// „Eingenommen“ in der Mitteilung öffnet die App nicht: Android merkt sich den Tipp
+// (PillActionReceiver, siehe native/patch-android.js), hier wird er übernommen.
+let inboxBusy = false;
+async function nativeInbox() {
+  const P = NP.Preferences; if (!P || inboxBusy) return;
+  inboxBusy = true;
+  try {
+    const r = await P.get({ key: "pillInbox" });
+    const items = JSON.parse((r && r.value) || "[]");
+    if (items.length) {
+      await P.remove({ key: "pillInbox" });
+      for (const it of items) {
+        if (it.action !== "taken") continue;
+        const at = it.at || Date.now();
+        String(it.keys || "").split(",").filter(Boolean).map(slotByKey).filter(Boolean)
+          .forEach(sl => mark(sl, openMeds(sl, at).filter(m => sl.at.getTime() >= (m.created || 0) - 60e3), "taken", at));
+      }
+      render();
+    }
+  } catch (e) { console.warn("Mitteilungs-Aktionen", e); }
+  inboxBusy = false;
 }
 
 async function nativePerm() { try { return (await LN.checkPermissions()).display; } catch (e) { return "denied"; } }
@@ -64,10 +88,7 @@ async function nativeSchedule() {
         if (!open.length) { if (t <= now + 60e3) doneIds.push(...ids); continue; }
         const many = open.length > 1, extra = { kind: "slot", keys: sl.key };
         const body = many ? open.map(m => m.name).join(", ") : medLine(open), lines = many ? open.map(m => medLine([m])).join("\n") : null;
-        const sz = S.snooze[sl.key];
         if (t > now) add(ids[0], t, "Zeit für deine Medikamente", body, extra, true, lines);
-        if (sz && sz > now) add(ids[2], sz, "Erinnerung: " + sl.time + " Uhr", body, extra, true, lines);
-        else if (!sz && t + NAG > now && now - t < LATE) add(ids[1], t + NAG, "Noch nicht eingenommen", body, extra, true, lines);
       }
     }
     // Vorrat
