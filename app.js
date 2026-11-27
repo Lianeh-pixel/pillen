@@ -120,11 +120,6 @@ function unmark(slot, m) {
   if (old.s === "taken" && m.stock != null) m.stock += m.amount || 1;
   delete S.log[k]; updateLow(m); save(); pushSlot(slot);
 }
-function snooze(slot, min = 15) {
-  S.snooze[slot.key] = Date.now() + min * 60e3; save();
-  if (S.device && S.push) pbRpc("pill_snooze", { dev: S.device, slot: slot.at.toISOString(), minutes: min }).catch(() => {});
-  toast("Ich erinnere dich um " + hm(new Date(S.snooze[slot.key])) + " Uhr nochmal.");
-}
 
 /* ---------- Vorrat ---------- */
 function updateLow(m) {
@@ -215,7 +210,7 @@ async function checkPush() {
     syncNow();
   } catch (e) { console.warn(e); }
 }
-// Aktionen aus der Mitteilung („Eingenommen“, „In 15 Min.“) übernehmen
+// Aktion „Eingenommen“ aus der Mitteilung übernehmen
 async function readInbox() {
   let items = []; try { items = await pbInboxTake(); } catch (e) { return; }
   if (!items.length) return;
@@ -223,7 +218,6 @@ async function readInbox() {
     const at = new Date(it.slot), k = slotKey(at, hm(at));
     const sl = slotsOf(at).find(s => s.key === k); if (!sl) continue;
     if (it.type === "taken") mark(sl, sl.meds.filter(m => !it.meds || !it.meds.length || it.meds.includes(m.id)).filter(m => !entry(sl.key, m)), "taken");
-    if (it.type === "snooze") { S.snooze[k] = it.until; save(); }
   }
   render();
 }
@@ -268,12 +262,11 @@ function viewToday() {
   const due = slots.filter(sl => openMeds(sl).some(m => stateOf(sl, m) === "due"));
   if (due.length) {
     const sl = due[0], keys = due.map(x => x.key).join(",");
-    const sz = Math.max(0, ...due.map(x => S.snooze[x.key] || 0));
     const rows = []; due.forEach(x => openMeds(x).filter(m => stateOf(x, m) === "due").forEach(m => rows.push({ x, m })));
     h += `<div class="ringwrap" id="ring" data-at="${sl.at.getTime()}">${ringSvg(0)}<div class="ringtxt"><div class="s">Einnahme überfällig seit</div><div class="big" id="clock">0:00:00</div><div class="w">${dayWord(sl.at)} um ${sl.time} Uhr</div></div></div>`;
     h += `<div class="card due">${rows.map(({ x, m }) => `<div class="inl" data-act="hitem" data-slot="${x.key}" data-id="${m.id}" style="gap:12px;margin-bottom:8px;cursor:pointer"><div class="pill">${medIcon(m)}</div><div class="grow"><div class="nm">${esc(m.name)}</div><div class="ds">${esc(doseText(m))} · ${x.time}${m.stock != null ? " · noch " + fmtNum(m.stock) + " im Vorrat" : ""}</div></div></div>`).join("")}
       <button class="btn" data-act="take" data-slot="${keys}">${IC.check}Jetzt einnehmen</button>
-      <div class="links"><button data-act="skip" data-slot="${keys}">✕ Auslassen</button><button data-act="snooze" data-slot="${keys}">↻ ${sz > Date.now() ? "Erinnert um " + hm(new Date(sz)) : "Verschieben"}</button></div></div>`;
+      <div class="links"><button data-act="skip" data-slot="${keys}">✕ Auslassen</button></div></div>`;
   }
   // Tagesverlauf: jede Uhrzeit als eigene Karte an einer Zeitleiste
   const dueSet = new Set(); due.forEach(x => openMeds(x).filter(m => stateOf(x, m) === "due").forEach(m => dueSet.add(x.key + "|" + m.id)));
@@ -554,7 +547,6 @@ document.addEventListener("click", async e => {
   else if (a === "deltime") { readEdit(); edit.times.splice(+b.dataset.i, 1); drawEdit(); }
   else if (a === "smode") { readEdit(); edit.stockMode = b.dataset.m; drawEdit(); }
   else if (a === "take" || a === "skip") { b.dataset.slot.split(",").map(slotByKey).filter(Boolean).forEach(sl => mark(sl, openMeds(sl).filter(m => stateOf(sl, m) === "due"), a === "take" ? "taken" : "skipped")); render(); if (a === "take") toast("Gut gemacht ✓"); }
-  else if (a === "snooze") { b.dataset.slot.split(",").map(slotByKey).filter(Boolean).forEach(sl => snooze(sl, 15)); render(); }
   else if (a === "tick") { const sl = slotByKey(b.dataset.slot), m = S.meds.find(x => x.id === b.dataset.id); if (sl && m) { mark(sl, [m], "taken"); render(); } }
   else if (a === "untick") { undoDose(b.dataset.slot, b.dataset.id); render(); }
   else if (a === "refill") {

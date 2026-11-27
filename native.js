@@ -14,7 +14,7 @@ async function nativeSetup() {
     await LN.createChannel({ id: CHANNEL.ton, name: "Erinnerungen mit Ton", importance: 5, visibility: 1, vibration: true });
     await LN.createChannel({ id: CHANNEL.vib, name: "Erinnerungen nur Vibration", importance: 5, visibility: 1, vibration: true, sound: "stille.wav" });
     await LN.createChannel({ id: CHANNEL.still, name: "Erinnerungen ohne Ton", importance: 4, visibility: 1, vibration: false, sound: "stille.wav" });
-    await LN.registerActionTypes({ types: [{ id: "pill", actions: [{ id: "taken", title: "Eingenommen" }, { id: "snooze", title: "In 15 Min." }] }] });
+    await LN.registerActionTypes({ types: [{ id: "pill", actions: [{ id: "taken", title: "Eingenommen" }] }] });
   } catch (e) { console.warn(e); }
   LN.addListener("localNotificationActionPerformed", ev => {
     const x = (ev.notification && ev.notification.extra) || {};
@@ -22,8 +22,6 @@ async function nativeSetup() {
     if (ev.actionId === "taken" && slots.length) {
       slots.forEach(sl => mark(sl, openMeds(sl).filter(m => sl.at.getTime() >= (m.created || 0) - 60e3), "taken"));
       toast("Eingenommen ✓");
-    } else if (ev.actionId === "snooze" && slots.length) {
-      slots.forEach(sl => snooze(sl, 15));
     }
     tab = x.kind === "stock" ? "mittel" : "heute"; closeSheet(); render();
   });
@@ -90,9 +88,7 @@ async function nativeSchedule() {
         if (!open.length) { if (t <= now + 60e3) doneIds.push(...ids); continue; }
         const many = open.length > 1, extra = { kind: "slot", keys: sl.key };
         const body = many ? open.map(m => m.name).join(", ") : medLine(open), lines = many ? open.map(m => medLine([m])).join("\n") : null;
-        const sz = S.snooze[sl.key];
         if (t > now) add(ids[0], t, "Zeit für deine Medikamente", body, extra, true, lines);
-        if (sz && sz > now) add(ids[2], sz, "Erinnerung: " + sl.time + " Uhr", body, extra, true, lines);
       }
     }
     // Vorrat
