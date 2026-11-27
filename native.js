@@ -28,13 +28,39 @@ async function nativeSetup() {
     tab = x.kind === "stock" ? "mittel" : "heute"; closeSheet(); render();
   });
   LN.addListener("localNotificationReceived", () => render());
+  NP.App.addListener("resume", () => nativeInbox());
+  setInterval(() => { if (!document.hidden) nativeInbox(); }, 5000);
   NP.App.addListener("backButton", () => {
     if (!$("#sheet").hidden) closeSheet();
     else if (tab !== "heute") { tab = "heute"; render(); }
     else NP.App.exitApp();
   });
+  await nativeInbox();
   await nativeAsk();
   nativeSchedule();
+}
+
+// „Eingenommen“ in der Mitteilung öffnet die App nicht: Android merkt sich den Tipp
+// (PillActionReceiver, siehe native/patch-android.js), hier wird er übernommen.
+let inboxBusy = false;
+async function nativeInbox() {
+  const P = NP.Preferences; if (!P || inboxBusy) return;
+  inboxBusy = true;
+  try {
+    const r = await P.get({ key: "pillInbox" });
+    const items = JSON.parse((r && r.value) || "[]");
+    if (items.length) {
+      await P.remove({ key: "pillInbox" });
+      for (const it of items) {
+        if (it.action !== "taken") continue;
+        const at = it.at || Date.now();
+        String(it.keys || "").split(",").filter(Boolean).map(slotByKey).filter(Boolean)
+          .forEach(sl => mark(sl, openMeds(sl, at).filter(m => sl.at.getTime() >= (m.created || 0) - 60e3), "taken", at));
+      }
+      render();
+    }
+  } catch (e) { console.warn("Mitteilungs-Aktionen", e); }
+  inboxBusy = false;
 }
 
 async function nativePerm() { try { return (await LN.checkPermissions()).display; } catch (e) { return "denied"; } }

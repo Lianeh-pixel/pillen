@@ -103,13 +103,13 @@ function autoTake() {
 }
 
 /* ---------- Einnahme ---------- */
-function mark(slot, meds, s) {
+function mark(slot, meds, s, at = Date.now()) {
   for (const m of meds) {
     const k = slot.key + "|" + m.id, old = S.log[k];
     if (old && old.s === s) continue;
     if (old && old.s === "taken" && m.stock != null) m.stock += m.amount || 1;
     if (s === "taken" && m.stock != null) m.stock = Math.max(0, m.stock - (m.amount || 1));
-    S.log[k] = { s, at: Date.now(), ...(old && old.auto ? { auto: true } : {}) };
+    S.log[k] = { s, at, ...(old && old.auto ? { auto: true } : {}) };
     updateLow(m);
   }
   delete S.snooze[slot.key];
@@ -605,7 +605,7 @@ else if ("serviceWorker" in navigator) {
   navigator.serviceWorker.addEventListener("message", ev => { if (ev.data && ev.data.type === "inbox") readInbox(); else if (tab === "heute") render(); });
 }
 if (!NATIVE) { fixSound(); readInbox(); checkPush(); pbSet("sound", S.sound).catch(() => {}); }
-document.addEventListener("visibilitychange", () => { if (!document.hidden) { if (!NATIVE) readInbox(); render(); queueSync(); } });
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { if (!NATIVE) readInbox(); else nativeInbox(); render(); queueSync(); } });
 
 // Maske nach unten wegschieben zum Schließen
 (() => {

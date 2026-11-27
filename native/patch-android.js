@@ -34,6 +34,81 @@ if (!m.includes("USE_EXACT_ALARM")) m = m.replace('<uses-permission android:name
     <uses-permission android:name="android.permission.VIBRATE" />`);
 wr(mf, m);
 
+// „Eingenommen“ in der Mitteilung: ohne die App zu öffnen. Ein Empfänger merkt sich den Tipp
+// (für die App lesbar über @capacitor/preferences) und schließt die Mitteilung.
+const pkgDir = path.join(app, "src", "main", "java", "de", "lianeh", "pillen");
+fs.mkdirSync(pkgDir, { recursive: true });
+wr(path.join(pkgDir, "PillActionReceiver.java"), `package de.lianeh.pillen;
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import androidx.core.app.NotificationManagerCompat;
+import com.capacitorjs.plugins.localnotifications.LocalNotificationManager;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+public class PillActionReceiver extends BroadcastReceiver {
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        int id = intent.getIntExtra(LocalNotificationManager.NOTIFICATION_INTENT_KEY, Integer.MIN_VALUE);
+        try {
+            JSONObject e = new JSONObject();
+            e.put("action", intent.getStringExtra(LocalNotificationManager.ACTION_INTENT_KEY));
+            e.put("at", System.currentTimeMillis());
+            String src = intent.getStringExtra(LocalNotificationManager.NOTIFICATION_OBJ_INTENT_KEY);
+            if (src != null) {
+                JSONObject x = new JSONObject(src).optJSONObject("extra");
+                if (x != null) e.put("keys", x.optString("keys", ""));
+            }
+            SharedPreferences p = context.getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
+            JSONArray a;
+            try { a = new JSONArray(p.getString("pillInbox", "[]")); } catch (Exception ex) { a = new JSONArray(); }
+            a.put(e);
+            p.edit().putString("pillInbox", a.toString()).commit();
+        } catch (Exception ex) {}
+        if (id != Integer.MIN_VALUE) NotificationManagerCompat.from(context).cancel(id);
+    }
+}
+`);
+m = rd(mf);
+if (!m.includes("PillActionReceiver")) m = m.replace("</application>", '    <receiver android:name=".PillActionReceiver" android:exported="false" />\n    </application>');
+wr(mf, m);
+const lnm = path.join(__dirname, "..", "node_modules", "@capacitor", "local-notifications", "android", "src", "main", "java", "com", "capacitorjs", "plugins", "localnotifications", "LocalNotificationManager.java");
+let ln = rd(lnm);
+const lnOld = `                PendingIntent actionPendingIntent = PendingIntent.getActivity(
+                    context,
+                    localNotification.getId() + notificationAction.getId().hashCode(),
+                    actionIntent,
+                    flags
+                );`;
+if (!ln.includes("PillActionReceiver")) {
+  if (!ln.includes(lnOld)) throw new Error("LocalNotificationManager.java hat sich geändert – Anpassung für „Eingenommen“ prüfen");
+  ln = ln.replace(lnOld, `                PendingIntent actionPendingIntent;
+                if ("taken".equals(notificationAction.getId())) {
+                    Intent bi = new Intent();
+                    bi.setClassName(context, "de.lianeh.pillen.PillActionReceiver");
+                    bi.putExtra(NOTIFICATION_INTENT_KEY, localNotification.getId());
+                    bi.putExtra(ACTION_INTENT_KEY, notificationAction.getId());
+                    bi.putExtra(NOTIFICATION_OBJ_INTENT_KEY, localNotification.getSource());
+                    actionPendingIntent = PendingIntent.getBroadcast(
+                        context,
+                        localNotification.getId() + notificationAction.getId().hashCode(),
+                        bi,
+                        flags
+                    );
+                } else {
+                    actionPendingIntent = PendingIntent.getActivity(
+                        context,
+                        localNotification.getId() + notificationAction.getId().hashCode(),
+                        actionIntent,
+                        flags
+                    );
+                }`);
+  wr(lnm, ln);
+}
+
 // Version und Signatur
 const bg = path.join(app, "build.gradle");
 let g = rd(bg);
